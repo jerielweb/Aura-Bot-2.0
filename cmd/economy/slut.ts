@@ -1,3 +1,13 @@
-import { runActivity } from "../../core/economyCommands.ts";
+import { createEconomyActivity } from "../../core/economyActivities.ts";
 
-export default { name: ["slut", "compania"], description: "Realiza un trabajo de compañía.", category: "economy", async run(ctx: any) { return runActivity(ctx, "slut"); } };
+export default createEconomyActivity({
+  names: ["slut", "putear", "prost"],
+  description: "Realiza un trabajo nocturno con riesgo y recompensa.",
+  title: "💃 𝐓𝐑𝐀𝐁𝐀𝐉𝐎 𝐍𝐎𝐂𝐓𝐔𝐑𝐍𝐎",
+  icon: "💃",
+  cooldown: 60 * 60 * 1000,
+  reward: [1000, 6000],
+  xp: [15, 40],
+  success: ["Bailaste en un club VIP y ganaste", "Trabajaste en un evento privado y cobraste", "Vendiste fotos y conseguiste"],
+  fail: ["El cliente huyó sin pagar.", "La policía hizo una redada y tuviste que escapar."],
+});

@@ -1,3 +1,13 @@
-import { runActivity } from "../../core/economyCommands.ts";
+import { createEconomyActivity } from "../../core/economyActivities.ts";
 
-export default { name: ["adventure", "aventura"], description: "Explora una aventura.", category: "economy", async run(ctx: any) { return runActivity(ctx, "adventure"); } };
+export default createEconomyActivity({
+  names: ["adventure", "aventura", "explorar"],
+  description: "Embárcate en una misión RPG para conseguir XP y monedas.",
+  title: "🗺️ 𝐌𝐈𝐒𝐈𝐎́𝐍 𝐃𝐄 𝐀𝐕𝐄𝐍𝐓𝐔𝐑𝐀",
+  icon: "🗺️",
+  cooldown: 2 * 60 * 60 * 1000,
+  reward: [10000, 20000],
+  xp: [40, 80],
+  success: ["Completaste una misión en las Ruinas Olvidadas y ganaste", "Derrotaste a un grupo de duendes y saqueaste", "Protegiste una caravana y te pagaron"],
+  fail: ["Caíste en una trampa de la mazmorra y tuviste que retirarte.", "El jefe de la zona te obligó a realizar una retirada táctica."],
+});

@@ -346,6 +346,11 @@ export async function handleMessage(
         }
       }
 
+      const storedGroup = runtimeDb.getGroup(from);
+      if (groupName && storedGroup.group_name !== groupName) {
+        runtimeDb.setGroup(from, { group_name: groupName });
+      }
+
       const primaryBot = runtimeDb.getPrimary(from);
       if (primaryBot && cmdName !== "delprimary" && cmdName !== "setprimary") {
         const myId = cleanJid(botJid).split("@")[0];
@@ -362,14 +367,22 @@ export async function handleMessage(
     const senderNum = sender.split("@")[0];
 
     if (msg.pushName) {
-      runtimeDb.setUser?.(sender, {
-        jid: sender,
+      const currentUser = runtimeDb.getUser?.(sender) ?? {};
+      const hasResolvedPhone = !sender.endsWith("@lid");
+      const nextContact = {
+        jid: hasResolvedPhone ? sender : null,
         lid: senderLid || rawSenderLid || sender,
         username: msg.pushName,
         pushName: msg.pushName,
-        phone_number: senderNum,
-      });
-      runtimeDb.setPushName?.(sender, msg.pushName);
+        phone_number: hasResolvedPhone ? senderNum : null,
+      };
+      const contactChanged =
+        currentUser.username !== nextContact.username ||
+        currentUser.pushName !== nextContact.pushName ||
+        currentUser.phone_number !== nextContact.phone_number ||
+        currentUser.lid !== nextContact.lid;
+
+      if (contactChanged) runtimeDb.setUser?.(sender, nextContact);
     }
     const botUserNum = cleanJid(sock.user?.id || "").split("@")[0];
 
@@ -378,19 +391,21 @@ export async function handleMessage(
       senderNum === botUserNum ||
       sender === botJid;
 
-    const isOwner = await matchesConfiguredNumber(
+    const configuredOwner = await matchesConfiguredNumber(
       config.ownerNumber ?? [],
       senderNum,
       rawSenderLid,
       sock,
     );
-    const isCoOwner = await matchesConfiguredNumber(
+    const configuredCoOwner = await matchesConfiguredNumber(
       config.coOwners ?? [],
       senderNum,
       rawSenderLid,
       sock,
     );
-    const isMod = isOwner || isCoOwner || runtimeDb.hasRole(senderNum, "mod");
+    const isOwner = configuredOwner || runtimeDb.hasRole(sender, "owner");
+    const isCoOwner = configuredCoOwner || runtimeDb.hasRole(sender, "coowner");
+    const isMod = isOwner || isCoOwner || runtimeDb.hasRole(sender, "mod");
     const isPremium = isMod || runtimeDb.hasRole(senderNum, "premium");
 
 

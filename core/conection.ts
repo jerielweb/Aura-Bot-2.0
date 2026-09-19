@@ -14,6 +14,7 @@ import { Boom } from "@hapi/boom";
 import { handleMessage } from "../handler.ts";
 import { getPlugins } from "./cmdLoader.ts";
 import { connectionLog, pairingLog } from "./logger.ts";
+import { db } from "../dbController/db.ts";
 
 export const logger = pino({ level: "silent" });
 
@@ -318,6 +319,41 @@ export async function connectToWhatsApp(sessionName: string, isSubBot: boolean =
           connectionLog(`Mensaje recibido: ${body}`, "alert");
         }
       }
+    }
+  });
+
+  sock.ev.on("group-participants.update", async ({ id, participants, action }) => {
+    if (!id || !Array.isArray(participants) || !["add", "remove"].includes(action)) return;
+
+    try {
+      const metadata = await sock.groupMetadata(id);
+      const group = db.getGroup(id);
+      const groupName = metadata?.subject || group.group_name || id;
+
+      if (group.group_name !== groupName) {
+        db.setGroup(id, { group_name: groupName });
+      }
+
+      const setting = action === "add" ? "welcome" : "goodbye";
+      if (!group[setting]) return;
+
+      const template = action === "add"
+        ? group.welcomeMessage || "👋 Bienvenido/a a *{group}*, {mention}!"
+        : group.goodbyeMessage || "👋 Hasta luego, {mention}. Gracias por formar parte de *{group}*.";
+      const participantJids = participants
+        .map((participant: any) => typeof participant === "string" ? participant : participant?.id)
+        .filter(Boolean);
+      const mentions = participantJids;
+      const text = mentions.reduce(
+        (message: string, participant: string) => message + "\n" + template
+          .replaceAll("{group}", groupName)
+          .replaceAll("{mention}", `@${participant.split("@")[0]}`),
+        "",
+      ).trim();
+
+      await sock.sendMessage(id, { text, mentions }, { quoted: undefined });
+    } catch (error) {
+      connectionLog(`Error en evento de participantes del grupo: ${String(error)}`, "error");
     }
   });
 

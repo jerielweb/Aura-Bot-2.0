@@ -1,6 +1,7 @@
-import { readdirSync, watch, existsSync, statSync, type Dirent } from "fs";
-import path from "path";
-import { pathToFileURL } from "url";
+import { readdir, watch, stat } from "node:fs/promises";
+import type { Dirent } from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { logInfo, alertLog, errorLog } from "./logger.ts";
 
 const plugins = new Map<string, any>();
@@ -37,7 +38,7 @@ async function loadDir(dir: string) {
   let entries: Dirent[] = [];
 
   try {
-    entries = readdirSync(dir, { withFileTypes: true }) as Dirent[];
+    entries = await readdir(dir, { withFileTypes: true }) as Dirent[];
   } catch {
     return;
   }
@@ -60,7 +61,8 @@ async function loadDir(dir: string) {
 
 async function loadPlugin(filePath: string) {
   try {
-    if (!existsSync(filePath) || statSync(filePath).isDirectory()) return;
+    const fileStat = await stat(filePath).catch(() => null);
+    if (!fileStat || fileStat.isDirectory()) return;
 
     const url = `${pathToFileURL(filePath).href}?t=${Date.now()}`;
     const mod = await import(url);
@@ -89,37 +91,49 @@ async function loadPlugin(filePath: string) {
   }
 }
 
-export function watchPlugins() {
-  if (!existsSync(PLUGINS_DIR)) return;
-
-  watch(PLUGINS_DIR, { recursive: true }, (_eventType, filename) => {
-    const fileName = toFileName(filename);
-    if (!fileName || !fileName.endsWith(".ts")) return;
-
-    const fullPath = path.resolve(PLUGINS_DIR, fileName);
-
-    if (watchTimers.has(fullPath)) {
-      const previousTimer = watchTimers.get(fullPath);
-      if (previousTimer) clearTimeout(previousTimer);
-    }
-
-    const timer = setTimeout(async () => {
-      watchTimers.delete(fullPath);
-
-      if (!existsSync(fullPath)) {
-        logInfo(`Plugin eliminado del disco: ${fileName}`);
-        await loadPlugins();
-        return;
-      }
-
-      logInfo(`Plugin actualizado detectado: ${fileName}`);
-      await loadPlugin(fullPath);
-    }, 150);
-
-    watchTimers.set(fullPath, timer);
-  });
+export async function watchPlugins() {
+  const dirStat = await stat(PLUGINS_DIR).catch(() => null);
+  if (!dirStat || !dirStat.isDirectory()) return;
 
   logInfo("Hot-reload de plugins activo con soporte anti-duplicados");
+
+  try {
+    const watcher = watch(PLUGINS_DIR, { recursive: true });
+
+    (async () => {
+      for await (const event of watcher) {
+        const fileName = toFileName(event.filename);
+        if (!fileName || !fileName.endsWith(".ts")) continue;
+
+        const fullPath = path.resolve(PLUGINS_DIR, fileName);
+
+        if (watchTimers.has(fullPath)) {
+          const previousTimer = watchTimers.get(fullPath);
+          if (previousTimer) clearTimeout(previousTimer);
+        }
+
+        const timer = setTimeout(async () => {
+          watchTimers.delete(fullPath);
+
+          // Verificación asíncrona del archivo modificado
+          const fileStat = await stat(fullPath).catch(() => null);
+
+          if (!fileStat) {
+            logInfo(`Plugin eliminado del disco: ${fileName}`);
+            await loadPlugins();
+            return;
+          }
+
+          logInfo(`Plugin actualizado detectado: ${fileName}`);
+          await loadPlugin(fullPath);
+        }, 150);
+
+        watchTimers.set(fullPath, timer);
+      }
+    })();
+  } catch (error) {
+    errorLog(`Error en el observador de plugins: ${error}`);
+  }
 }
 
 export function getPlugins() {

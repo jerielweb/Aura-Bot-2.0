@@ -1,5 +1,12 @@
 import { db } from "../dbController/db.ts";
 
+export type EconomyUser = Record<string, any>;
+
+const DEFAULT_ECONOMY_USER: EconomyUser = {
+  bolsillo: 0,
+  banco: 0,
+};
+
 type CooldownRows = {
   daily: number;
   weekly: number;
@@ -46,8 +53,8 @@ export function formTime(ms: number): string {
   return `${s}s`;
 }
 
-export function checkCooldown(jid: string, key: keyof CooldownRows) {
-  const user: Record<string, any> = db.getUser(jid) ?? {};
+export function checkCooldown(groupJid: string, userJid: string, key: keyof CooldownRows) {
+  const user = getEconomyUser(groupJid, userJid);
   const lastKey = `last${key.charAt(0).toUpperCase()}${key.slice(1)}`;
   const last = Number(user[lastKey] ?? 0);
   const cooldown = COOLDOWNS[key];
@@ -64,19 +71,19 @@ export function checkCooldown(jid: string, key: keyof CooldownRows) {
   return { ready: true };
 }
 
-export function setCooldown(jid: string, key: keyof CooldownRows) {
+export function setCooldown(groupJid: string, userJid: string, key: keyof CooldownRows) {
   const lastKey = `last${key.charAt(0).toUpperCase()}${key.slice(1)}`;
-  db.setUser(jid, { [lastKey]: Date.now() });
+  setEconomyUser(groupJid, userJid, { [lastKey]: Date.now() });
 }
 
-export function addBolsillo(jid: string, amount: number) {
-  const user: Record<string, any> = db.getUser(jid) ?? {};
+export function addBolsillo(groupJid: string, userJid: string, amount: number) {
+  const user = getEconomyUser(groupJid, userJid);
   const current = Number(user.bolsillo ?? 0);
-  db.setUser(jid, { bolsillo: current + amount });
+  setEconomyUser(groupJid, userJid, { bolsillo: current + amount });
 }
 
-export function getBolsillo(jid: string): number {
-  const user = (db.getUser(jid) ?? {}) as Record<string, any>;
+export function getBolsillo(groupJid: string, userJid: string): number {
+  const user = getEconomyUser(groupJid, userJid);
   return Number(user.bolsillo ?? 0);
 }
 
@@ -87,11 +94,43 @@ export function addAura(jid: string, amount: number) {
   return aura;
 }
 
-export function transferBolsillo(from: string, to: string, amount: number): boolean {
+export function transferBolsillo(groupJid: string, from: string, to: string, amount: number): boolean {
   const value = Math.floor(Number(amount));
-  if (!Number.isFinite(value) || value <= 0 || from === to || getBolsillo(from) < value) return false;
+  if (!Number.isFinite(value) || value <= 0 || from === to || getBolsillo(groupJid, from) < value) return false;
 
-  addBolsillo(from, -value);
-  addBolsillo(to, value);
+  addBolsillo(groupJid, from, -value);
+  addBolsillo(groupJid, to, value);
   return true;
+}
+
+function getEconomyStore(groupJid: string): Record<string, EconomyUser> {
+  const group = db.getGroup(groupJid) as Record<string, any>;
+  if (!group.economy || typeof group.economy !== "object") group.economy = {};
+  if (!group.economy.users || typeof group.economy.users !== "object") group.economy.users = {};
+  return group.economy.users;
+}
+
+export function getEconomyUser(groupJid: string, userJid: string, defaults: EconomyUser = {}): EconomyUser {
+  const users = getEconomyStore(groupJid);
+  return { ...DEFAULT_ECONOMY_USER, ...defaults, ...(users[userJid] ?? {}) };
+}
+
+export function setEconomyUser(groupJid: string, userJid: string, data: EconomyUser): EconomyUser {
+  const group = db.getGroup(groupJid) as Record<string, any>;
+  const users = getEconomyStore(groupJid);
+  users[userJid] = { ...getEconomyUser(groupJid, userJid), ...data };
+  db.setGroup(groupJid, { ...group, economy: { ...(group.economy ?? {}), users } });
+  return users[userJid];
+}
+
+export function getGroupEconomyUsers(groupJid: string): Record<string, EconomyUser> {
+  return getEconomyStore(groupJid);
+}
+
+export function formatCoins(value: number): string {
+  return Math.max(0, Math.floor(Number(value) || 0)).toLocaleString("es-ES");
+}
+
+export function cooldownText(remaining: number): string {
+  return formTime(Math.max(0, remaining));
 }

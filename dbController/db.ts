@@ -48,6 +48,7 @@ db_instance.exec(`
 `);
 
 const hierarchy = ["user", "premium", "mod", "coowner", "owner"] as const;
+type UserRole = typeof hierarchy[number];
 
 const stmts = {
   getUser: db_instance.prepare("SELECT * FROM users WHERE jid = ?"),
@@ -56,6 +57,9 @@ const stmts = {
   ),
   updateUser: db_instance.prepare(
     "UPDATE users SET lid = ?, username = ?, phone_number = ?, role = ?, is_banned = ?, data = ? WHERE jid = ?",
+  ),
+  updateUserByLid: db_instance.prepare(
+    "UPDATE users SET username = ?, phone_number = ?, role = ?, is_banned = ?, data = ? WHERE lid = ?",
   ),
   getAllUsers: db_instance.prepare("SELECT jid, lid, username, phone_number, role, is_banned, data FROM users"),
 
@@ -96,19 +100,38 @@ function safeJson<T = Record<string, any>>(value: string | null | undefined): T 
   }
 }
 
+function getUserRow(input: string, lid?: string | null) {
+  const rawInput = String(input || "").trim();
+  const key = normalizeJid(rawInput);
+  const candidates = [
+    rawInput,
+    key,
+    key ? `${key}@s.whatsapp.net` : "",
+  ].filter(Boolean);
+  const conditions = candidates.flatMap(() => ["jid = ?", "lid = ?"]);
+  const values = candidates.flatMap((candidate) => [candidate, candidate]);
+
+  if (lid) {
+    conditions.push("lid = ?");
+    values.push(lid);
+  }
+
+  return db_instance
+    .prepare(`SELECT * FROM users WHERE ${conditions.join(" OR ")} LIMIT 1`)
+    .get(...values) as any | undefined;
+}
+
 function getUser(input: string) {
   const rawInput = String(input || "").trim();
   const key = normalizeJid(rawInput);
-  const row = (db_instance
-    .prepare("SELECT * FROM users WHERE jid = ? OR lid = ? OR jid = ? OR lid = ?")
-    .get(rawInput, rawInput, key, key) as any | undefined) ?? undefined;
+  const row = getUserRow(rawInput);
 
   if (!row) {
     const defaultUser = {
-      jid: key,
+      jid: rawInput.endsWith("@lid") ? null : `${key}@s.whatsapp.net`,
       lid: rawInput.endsWith("@lid") ? rawInput : null,
       username: null,
-      phone_number: key,
+      phone_number: rawInput.endsWith("@lid") ? null : key,
       role: "user",
       is_banned: 0,
       data: {},
@@ -130,10 +153,10 @@ function getUser(input: string) {
   const jsonData = safeJson<Record<string, any>>(row.data);
   return {
     ...jsonData,
-    jid: row.jid ?? jsonData.jid ?? key,
+    jid: row.jid !== undefined ? row.jid : (jsonData.jid ?? key),
     lid: row.lid ?? jsonData.lid ?? (rawInput.endsWith("@lid") ? rawInput : null),
     username: row.username ?? jsonData.username ?? null,
-    phone_number: row.phone_number ?? jsonData.phone_number ?? key,
+    phone_number: row.phone_number !== undefined ? row.phone_number : (jsonData.phone_number ?? key),
     role: row.role ?? jsonData.role ?? "user",
     is_banned: Number(row.is_banned ?? jsonData.is_banned ?? 0),
     data: jsonData,
@@ -157,6 +180,9 @@ function getGroup(jid: string) {
       adminMode: false,
       primaryBot: null,
       welcome: false,
+      goodbye: false,
+      welcomeMessage: null,
+      goodbyeMessage: null,
       data: {},
     };
 
@@ -189,6 +215,9 @@ function getGroup(jid: string) {
     adminMode: Boolean(row.adminMode ?? jsonData.adminMode ?? false),
     primaryBot: row.primaryBot ?? jsonData.primaryBot ?? null,
     welcome: Boolean(row.welcome ?? jsonData.welcome ?? false),
+    goodbye: Boolean(row.goodbye ?? jsonData.goodbye ?? false),
+    welcomeMessage: row.welcomeMessage ?? jsonData.welcomeMessage ?? null,
+    goodbyeMessage: row.goodbyeMessage ?? jsonData.goodbyeMessage ?? null,
     data: jsonData,
   };
 }
@@ -238,8 +267,11 @@ export const db = {
     const key = normalizeJid(jid);
     const currentData = getUser(jid);
     const merged = { ...currentData, ...dataObject };
-    const rawJid = String(dataObject?.jid ?? jid ?? key).trim() || key;
-    const rawLid = String(dataObject?.lid ?? currentData?.lid ?? (rawJid.endsWith("@lid") ? rawJid : "")).trim();
+    const isLidOnly = String(jid).endsWith("@lid") && !dataObject?.jid;
+    const rawJid = isLidOnly
+      ? null
+      : String(dataObject?.jid ?? jid ?? key).trim() || key;
+    const rawLid = String(dataObject?.lid ?? currentData?.lid ?? (isLidOnly ? jid : "")).trim() || null;
     const payload = {
       ...merged.data,
       ...merged,
@@ -249,16 +281,14 @@ export const db = {
 
     delete payload.data;
 
-    const row = (db_instance
-      .prepare("SELECT * FROM users WHERE jid = ? OR lid = ? OR jid = ? OR lid = ?")
-      .get(rawJid, rawJid, key, key) as any | undefined) ?? undefined;
+    const row = getUserRow(rawJid ?? key, rawLid);
 
     if (!row) {
       stmts.insertUser.run(
         rawJid,
         rawLid || merged.lid || null,
         merged.username ?? null,
-        merged.phone_number ?? key,
+        isLidOnly ? null : (merged.phone_number ?? key),
         merged.role ?? "user",
         Number(Boolean(merged.is_banned ?? 0)),
         JSON.stringify(payload),
@@ -266,15 +296,28 @@ export const db = {
       return;
     }
 
-    stmts.updateUser.run(
-      rawLid || row.lid || merged.lid || null,
-      merged.username ?? row.username ?? null,
-      merged.phone_number ?? row.phone_number ?? key,
-      merged.role ?? row.role ?? "user",
-      Number(Boolean(merged.is_banned ?? row.is_banned ?? 0)),
-      JSON.stringify(payload),
-      row.jid || key,
-    );
+    const storedLid = rawLid || row.lid || merged.lid || null;
+    const phoneNumber = isLidOnly ? null : (merged.phone_number ?? row.phone_number ?? key);
+    if (row.jid === null && storedLid) {
+      stmts.updateUserByLid.run(
+        merged.username ?? row.username ?? null,
+        phoneNumber,
+        merged.role ?? row.role ?? "user",
+        Number(Boolean(merged.is_banned ?? row.is_banned ?? 0)),
+        JSON.stringify(payload),
+        storedLid,
+      );
+    } else {
+      stmts.updateUser.run(
+        storedLid,
+        merged.username ?? row.username ?? null,
+        phoneNumber,
+        merged.role ?? row.role ?? "user",
+        Number(Boolean(merged.is_banned ?? row.is_banned ?? 0)),
+        JSON.stringify(payload),
+        row.jid ?? key,
+      );
+    }
   },
 
   setGroup(jid: string, dataObject: Record<string, any>) {
@@ -359,7 +402,7 @@ export const db = {
       lid: existing?.lid || (jid.endsWith("@lid") ? jid : null),
       username: pushName,
       pushName,
-      phone_number: normalizeJid(jid),
+      phone_number: jid.endsWith("@lid") ? null : normalizeJid(jid),
     });
   },
 
@@ -416,7 +459,83 @@ export const db = {
   },
 
   setRole(jid: string, role: string) {
-    this.setUser(jid, { role });
+    const normalizedRole = hierarchy.includes(role as UserRole) ? role : "user";
+    this.setUser(jid, { role: normalizedRole });
+  },
+
+  syncDefaultUserRoles() {
+    const configuredRoles = Array.isArray(globalThis.DEFAULT_USER_ROLES)
+      ? globalThis.DEFAULT_USER_ROLES
+      : [];
+
+    for (const configured of configuredRoles) {
+      const role = hierarchy.includes(configured?.role as UserRole)
+        ? configured.role
+        : "user";
+      const configuredJid = String(configured?.jid ?? "").trim();
+      const configuredLid = String(configured?.lid ?? "").trim();
+      if (!configuredJid && !configuredLid) continue;
+
+      const lookup = configuredJid || configuredLid;
+      const current = getUserRow(lookup, configuredLid || null);
+      const jid = configuredJid || current?.jid || null;
+      const lid = configuredLid || current?.lid || null;
+      const canonicalJid = jid && !jid.endsWith("@lid")
+        ? (jid.includes("@") ? jid : `${jid}@s.whatsapp.net`)
+        : null;
+
+      if (!current) {
+        const phone = canonicalJid ? normalizeJid(canonicalJid) : null;
+        stmts.insertUser.run(
+          canonicalJid,
+          lid,
+          null,
+          phone,
+          role,
+          0,
+          JSON.stringify({ jid: canonicalJid, lid, role }),
+        );
+        continue;
+      }
+
+      const currentData = safeJson<Record<string, any>>(current.data);
+      const changed =
+        current.jid !== canonicalJid ||
+        current.lid !== lid ||
+        current.role !== role ||
+        currentData.jid !== canonicalJid ||
+        currentData.lid !== lid ||
+        currentData.role !== role;
+
+      if (!changed) continue;
+
+      const payload = {
+        ...currentData,
+        jid: canonicalJid,
+        lid,
+        role,
+      };
+      if (current.jid === null && lid) {
+        stmts.updateUserByLid.run(
+          current.username ?? null,
+          canonicalJid ? normalizeJid(canonicalJid) : null,
+          role,
+          Number(current.is_banned ?? 0),
+          JSON.stringify(payload),
+          lid,
+        );
+      } else if (current.jid) {
+        stmts.updateUser.run(
+          lid,
+          current.username ?? null,
+          canonicalJid ? normalizeJid(canonicalJid) : null,
+          role,
+          Number(current.is_banned ?? 0),
+          JSON.stringify(payload),
+          current.jid,
+        );
+      }
+    }
   },
 
   isBanned(jid: string) {
@@ -431,5 +550,7 @@ export const db = {
     this.setUser(jid, { is_banned: 0, banned: false });
   },
 };
+
+db.syncDefaultUserRoles();
 
 console.log("Database initialized successfully.");

@@ -1,10 +1,10 @@
 import { db } from "../dbController/db.ts";
 import { fytBold } from "./socketText.ts";
-
+import { economyUser } from "./economyRuntime.ts";
 export type Profile = Record<string, any>;
 
 export const DEFAULT_PFP =
-	"https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png";
+	"https://i.pinimg.com/736x/af/a3/24/afa324dff15091f93624bb470d60a592.jpg";
 
 const DEFAULT_PROFILE = {
 	name: "Sin nombre",
@@ -95,7 +95,13 @@ export function formatProfile(jid: string, profile = getProfile(jid)): string {
 }
 
 export async function sendProfilePreview(ctx: any, target: string) {
-	const text = formatProfile(target, getProfile(target));
+	const profile = getProfile(target);
+	const economy = economyUser(ctx, target);
+	const text = formatProfile(target, {
+		...profile,
+		bolsillo: economy.bolsillo,
+		banco: economy.banco,
+	});
 
 	try {
 		const profileUrl = await getProfilePictureUrl(ctx.sock, target);
