@@ -1,0 +1,3 @@
+import { getProfile } from "../../core/profileConfig.ts";
+
+export default { name: ["einfo", "economyinfo"], description: "Muestra tus estadísticas económicas.", category: "economy", async run(ctx: any) { const user = getProfile(ctx.sender); return ctx.reply(`📊 ECONOMÍA GLOBAL\n💰 Billetera: $${Number(user.bolsillo ?? 0).toLocaleString("es-ES")}\n✨ Aura: ${Number(user.aura ?? 0)}\n📈 Nivel Aura: ${Math.floor(Number(user.aura ?? 0) / 100) + 1}`); } };

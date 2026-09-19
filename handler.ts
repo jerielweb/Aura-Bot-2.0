@@ -1,9 +1,9 @@
-import fs from "fs";
 import chalk from "chalk";
 import { LRUCache } from "lru-cache";
 import { jidNormalizedUser } from "@whiskeysockets/baileys";
 import { cmdLog, textLog } from "./core/logger.ts";
-import { NOT_CMD_FOUND } from "./core/socketText.ts";
+import { NOT_CMD_FOUND, ERROR_CMD, NOT_BOT_ADMIN, NOT_BOT_USER, NOT_PRIVATE, NOT_OWNER, NOT_GROUP, NOT_ADMIN, NOT_MOD, NOT_PREMIUM } from "./core/socketText.ts";
+import {db} from "./dbController/db.ts";
 
 export type ContactMetadata = {
   user?: string | null;
@@ -165,7 +165,9 @@ async function resolveLid(lidJid: string | null | undefined, groupMeta: any, soc
   try {
     const resolved = await sock.signalRepository?.lidMapping?.getPNForLID(lidJid);
     if (resolved) return cleanJid(resolved);
-  } catch {}
+  } catch {
+    // Ignoramos errores de resolución de LID y devolvemos el valor original.
+  }
 
   return lidJid;
 }
@@ -229,12 +231,7 @@ export async function handleMessage(
       ...runtimeOptions.logger,
     };
 
-    const db = runtimeOptions.db ?? {
-      getPrimary: () => null,
-      hasRole: () => false,
-      setPushName: () => {},
-      getGroup: () => null,
-    };
+    const runtimeDb = runtimeOptions.db ?? db;
 
     const plugins = runtimeOptions.plugins ?? runtimeOptions.getPlugins?.() ?? new Map();
     const prefixes = Array.isArray(config.prefix) ? config.prefix : [config.prefix];
@@ -288,28 +285,38 @@ export async function handleMessage(
 
     const msgTypeLabel =
       msgType === "conversation"
-        ? "Texto"
-        : msgType === "extendedTextMessage"
-          ? "Texto"
-          : msgType === "imageMessage"
-            ? "🖼️ Imagen"
-            : msgType === "videoMessage"
-              ? "🎥 Video"
-              : msgType === "audioMessage"
-                ? "🎵 Audio"
-                : msgType === "stickerMessage"
-                  ? "🎴 Sticker"
-                  : msgType === "documentMessage"
-                    ? "📄 Documento"
-                    : msgType === "ptvMessage"
-                      ? "📹 Nota de video"
-                      : msgType === "reactionMessage"
-                        ? "🔥 Reacción"
-                        : msgType === "contactMessage"
-                          ? "👤 Contacto"
-                          : msgType === "locationMessage"
-                            ? "📍 Ubicación"
-                            : "Otro";
+      ? "Texto"
+      : msgType === "extendedTextMessage"
+      ? "Texto"
+      : msgType === "imageMessage"
+      ? "🖼️ Imagen"
+      : msgType === "videoMessage"
+      ? "🎥 Video"
+      : msgType === "audioMessage"
+      ? "🎵 Audio"
+      : msgType === "stickerMessage"
+      ? "🎴 Sticker"
+      : msgType === "documentMessage"
+      ? "📄 Documento"
+      : msgType === "ptvMessage"
+      ? "📹 Nota de video"
+      : msgType === "reactionMessage"
+      ? "🔥 Reacción"
+      : msgType === "contactMessage"
+      ? "👤 Contacto"
+      : msgType === "locationMessage"
+      ? "📍 Ubicación"
+      : msgType === "liveLocationMessage"
+      ? "📍 Ubicación en vivo"
+      : msgType === "pollCreationMessage"
+      ? "📊 Encuesta"
+      : msgType === "pollUpdateMessage"
+      ? "📊 Actualización de encuesta"
+      : msgType === "groupInviteMessage"
+      ? "👥 Invitación a grupo"
+      : msgType === "statusMentionMessage"
+      ? "Mension De Estado"
+      : "Otro";
 
     const usedPrefix = prefixes.find((p: string) => body.startsWith(p)) ?? null;
     const isCmd = !!usedPrefix;
@@ -339,7 +346,7 @@ export async function handleMessage(
         }
       }
 
-      const primaryBot = db.getPrimary(from);
+      const primaryBot = runtimeDb.getPrimary(from);
       if (primaryBot && cmdName !== "delprimary" && cmdName !== "setprimary") {
         const myId = cleanJid(botJid).split("@")[0];
         if (primaryBot !== myId) return;
@@ -352,9 +359,24 @@ export async function handleMessage(
       sender = await resolveLid(sender, groupMeta, sock);
     }
 
-    if (msg.pushName) db.setPushName(sender, msg.pushName);
-
     const senderNum = sender.split("@")[0];
+
+    if (msg.pushName) {
+      runtimeDb.setUser?.(sender, {
+        jid: sender,
+        lid: senderLid || rawSenderLid || sender,
+        username: msg.pushName,
+        pushName: msg.pushName,
+        phone_number: senderNum,
+      });
+      runtimeDb.setPushName?.(sender, msg.pushName);
+    }
+    const botUserNum = cleanJid(sock.user?.id || "").split("@")[0];
+
+    const isBotUser =
+      (!!mainBotNum && senderNum === cleanJid(mainBotNum).split("@")[0]) ||
+      senderNum === botUserNum ||
+      sender === botJid;
 
     const isOwner = await matchesConfiguredNumber(
       config.ownerNumber ?? [],
@@ -368,8 +390,9 @@ export async function handleMessage(
       rawSenderLid,
       sock,
     );
-    const isMod = isOwner || isCoOwner || db.hasRole(senderNum, "mod");
-    const isPremium = isMod || db.hasRole(senderNum, "premium");
+    const isMod = isOwner || isCoOwner || runtimeDb.hasRole(senderNum, "mod");
+    const isPremium = isMod || runtimeDb.hasRole(senderNum, "premium");
+
 
     let isAdmin = false;
     let isBotAdmin = false;
@@ -380,7 +403,9 @@ export async function handleMessage(
       try {
         const resolvedBotLid = await sock.signalRepository?.lidMapping?.getLIDForPN(botJidClean);
         if (resolvedBotLid) botLidClean = cleanJid(resolvedBotLid);
-      } catch {}
+      } catch {
+        // Sin LID resoluble, se mantiene sin botLidClean.
+      }
 
       const senderJidClean = cleanJid(sender);
 
@@ -407,7 +432,7 @@ export async function handleMessage(
     }
 
     if (isGroup) {
-      const groupData = db.getGroup(from);
+      const groupData = runtimeDb.getGroup(from);
 
       if (groupData?.privateMode && !isOwner && !isCoOwner) {
         return;
@@ -483,6 +508,7 @@ export async function handleMessage(
       isPremium,
       isAdmin,
       isBotAdmin,
+      isBotUser,
       resolveLid: (lidJid: string) => resolveLid(lidJid, groupMeta, sock),
       clearGroupCache: () => groupCache.delete(from),
       reply: async (content: any) => {
@@ -511,13 +537,14 @@ export async function handleMessage(
       },
     };
 
-    if (plugin.ownerOnly && !isOwner) return ctx.reply({ text: "❌ Solo el owner puede usar este comando." });
-    if (plugin.modOnly && !isMod) return ctx.reply({ text: "❌ Solo moderadores pueden usar este comando." });
-    if (plugin.botAdmin && isGroup && !isBotAdmin) return ctx.reply({ text: "❌ El bot necesita ser admin del grupo." });
-    if (plugin.adminOnly && isGroup && !isAdmin && !isMod) return ctx.reply({ text: "❌ Solo administradores del grupo pueden usar este comando." });
-    if (plugin.premiumOnly && !isPremium) return ctx.reply({ text: "⭐ Este comando es exclusivo para premium." });
-    if (plugin.groupOnly && !isGroup) return ctx.reply({ text: "👥 Este comando solo funciona en grupos." });
-    if (plugin.privateOnly && isGroup) return ctx.reply({ text: "📩 Este comando solo funciona en privado." });
+    if (plugin.ownerOnly && !isOwner) return ctx.reply({ text: NOT_OWNER() });
+    if (plugin.modOnly && !isMod) return ctx.reply({ text: NOT_MOD() });
+    if (plugin.botAdmin && isGroup && !isBotAdmin) return ctx.reply({ text: NOT_BOT_ADMIN() });
+    if (plugin.adminOnly && isGroup && !isAdmin && !isMod) return ctx.reply({ text: NOT_ADMIN() });
+    if (plugin.premiumOnly && !isPremium) return ctx.reply({ text: NOT_PREMIUM() });
+    if (plugin.groupOnly && !isGroup) return ctx.reply({ text: NOT_GROUP() });
+    if (plugin.privateOnly && isGroup) return ctx.reply({ text: NOT_PRIVATE() });
+    if (plugin.botUserOnly && !isBotUser) return ctx.reply({ text: NOT_BOT_USER() });
 
     const start = Date.now();
     try {
@@ -530,9 +557,10 @@ export async function handleMessage(
       await ctx.react("❌");
 
       if (e.message?.toLowerCase().includes("forbidden")) {
-        await ctx.reply({ text: "❌ No se pudo completar la acción: el bot necesita ser administrador del grupo." });
+        await ctx.reply({ text: NOT_BOT_ADMIN() });
       } else {
-        await ctx.reply({ text: `❌ Error ejecutando \`${cmdName}\`:\n${e.message}` });
+        const errorDetails = e.stack || e.message || String(e);
+        await ctx.reply({ text: ERROR_CMD({ cmdName, errorDetails })});
       }
     }
   } catch (e: any) {

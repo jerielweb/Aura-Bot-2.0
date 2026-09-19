@@ -4,6 +4,7 @@ export default {
   description: "Velocidad del sistema.",
   category: "system",
   ownerOnly: false,
+  botUserOnly: false,
 
   async run({ sock, from, msg }) {
     const start = Date.now();

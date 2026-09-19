@@ -1,0 +1,3 @@
+import { db } from "../../dbController/db.ts";
+
+export default { name: ["baltop", "moneytop"], description: "Ranking global de dinero.", category: "economy", async run(ctx: any) { const users = db.getAllUsers().sort((a: any, b: any) => Number(b.bolsillo ?? 0) - Number(a.bolsillo ?? 0)).slice(0, 10); return ctx.reply(["🏦 TOP GLOBAL DE DINERO", ...users.map((user: any, index: number) => `${index + 1}. ${user.username ?? user.jid}: $${Number(user.bolsillo ?? 0).toLocaleString("es-ES")}`)].join("\n")); } };

@@ -123,7 +123,7 @@ export async function connectToWhatsApp(sessionName: string, isSubBot: boolean =
       keys: makeCacheableSignalKeyStore(state.keys, logger),
     },
     printQRInTerminal: false,
-    browser: ["Ubuntu", "Chrome", "20.0.04"],
+    browser: ["Mac OS", "Chrome", "20.0.04"],
     logger,
     connectTimeoutMs: 60000,
     defaultQueryTimeoutMs: 0,

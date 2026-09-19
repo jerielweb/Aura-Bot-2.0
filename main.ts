@@ -13,7 +13,9 @@ process.env.TMPDIR = TMP_DIR;
 for (const file of fs.readdirSync(TMP_DIR)) {
   try {
     fs.unlinkSync(path.join(TMP_DIR, file));
-  } catch {}
+  } catch {
+    // Ignora archivos que ya no estén disponibles al limpiar el caché.
+  }
 }
 
 setInterval(() => {
@@ -25,7 +27,9 @@ setInterval(() => {
       if (Date.now() - stat.mtimeMs > 3600000) {
         fs.unlinkSync(filePath);
       }
-    } catch {}
+    } catch {
+      // Ignora entradas no válidas durante la limpieza del caché.
+    }
   }
   if (global.gc) global.gc();
 }, 6 * 60 * 60 * 1000);

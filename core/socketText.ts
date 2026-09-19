@@ -1,13 +1,3 @@
-export const NOT_CMD_FOUND = ({ cmdName, prefix = "." }: { cmdName: string; prefix?: string }) => {
-  return `╭〔 ⚠️ 𝐀𝐔𝐑𝐀 𝐑𝐄𝐄𝐃 〕⬣
-┃ ❌ 𝐂𝐎𝐌𝐀𝐍𝐃𝐎 𝐍𝐎 𝐄𝐗𝐈𝐒𝐓𝐄
-╰━━━━━━━━━━━━⬣
-┃ > El comando \`${cmdName}\` no existe
-┃ > o está mal escrito.
-┃ > Ejecuta \`${prefix}menu\` para ver
-┃ > los comandos disponibles.`;
-};
-
 export const fytBold = (texto) => {
   const mapa = {
     a: "𝐚",
@@ -69,3 +59,90 @@ export const fytBold = (texto) => {
     .map((letra) => mapa[letra] || letra)
     .join("");
 };
+
+export const NOT_CMD_FOUND = ({ cmdName, prefix = "." }: { cmdName: string; prefix?: string }) => {
+  return `╭〔 ⚠️ ${fytBold("AURA REED")}〕⬣
+┃ ❌ ${fytBold("COMANDO NO ENCONTRADO")}
+╰━━━━━━━━━━━━⬣
+┃ > El comando \`${cmdName}\` no existe
+┃ > o está mal escrito.
+┃ > Ejecuta \`${prefix}menu\` para ver
+┃ > los comandos disponibles.`;
+};
+
+export const ERROR_CMD = ({ cmdName, errorDetails }: { cmdName: string; errorDetails: string }) => {
+  return `╭〔 ⚠️ ${fytBold("AURA REED")}〕⬣
+┃ ❌ ${fytBold("ERROR EN COMANDO")}
+╰━━━━━━━━━━━━⬣
+┃ > Ocurrió un error al ejecutar
+┃ > el comando \`${cmdName}\`.
+
+> Detalles del error:
+\`\`\`
+${errorDetails}
+\`\`\``;
+}
+
+export const NOT_BOT_ADMIN = () => {
+  return `╭〔 ⚠️ ${fytBold("AURA REED")}〕⬣
+┃ ❌ ${fytBold("SIN PERMISOS")}
+╰━━━━━━━━━━━━⬣
+┃ > Este comando solo puede ser usado
+┃ > si el bot es administrador del grupo.`;
+}
+
+export const NOT_BOT_USER = () => {
+  return `╭〔 ⚠️ ${fytBold("AURA REED")}〕⬣
+┃ ❌ ${fytBold("SIN PERMISOS")}
+╰━━━━━━━━━━━━⬣
+┃ > Este comando solo puede ser usado
+┃ > por el misma instancia del bot.`;
+}
+
+export const NOT_ADMIN = () => {
+  return `╭〔 ⚠️ ${fytBold("AURA REED")}〕⬣
+┃ ❌ ${fytBold("SIN PERMISOS")}
+╰━━━━━━━━━━━━⬣
+┃ > Este comando solo puede ser usado
+┃ > por los administradores del grupo.`;
+}
+
+export const NOT_PRIVATE = () => {
+  return `╭〔 ⚠️ ${fytBold("AURA REED")}〕⬣
+┃ ❌ ${fytBold("CHAT PRIVADO")}
+╰━━━━━━━━━━━━⬣
+┃ > Este comando solo puede ser usado
+┃ > en chats privados.`;
+}
+
+export const NOT_GROUP = () => {
+  return `╭〔 ⚠️ ${fytBold("AURA REED")}〕⬣
+┃ ❌ ${fytBold("CHAT NO GRUPAL")}
+╰━━━━━━━━━━━━⬣
+┃ > Este comando solo puede ser usado
+┃ > en grupos.`;
+}
+
+export const NOT_OWNER = () => {
+  return `╭〔 ⚠️ ${fytBold("AURA REED")}〕⬣
+┃ ❌ ${fytBold("SIN PERMISOS")}
+╰━━━━━━━━━━━━⬣
+┃ > Este comando solo puede ser usado
+┃ > por el dueño del bot.`;
+}
+
+export const NOT_MOD = () => {
+  return `╭〔 ⚠️ ${fytBold("AURA REED")}〕⬣
+┃ ❌ ${fytBold("SIN PERMISOS")}
+╰━━━━━━━━━━━━⬣
+┃ > Este comando solo puede ser usado
+┃ > por los moderadores del bot.`;
+}
+
+export const NOT_PREMIUM = () => {
+  return `╭〔 ⚠️ ${fytBold("AURA REED")}〕⬣
+┃ ❌ ${fytBold("NO PREMIUM")}
+╰━━━━━━━━━━━━⬣
+┃ > Este comando solo puede ser usado
+┃ > por los usuarios premium del bot.`;
+}
