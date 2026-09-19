@@ -1,0 +1,10 @@
+node_modules
+cache
+.env
+package-lock.json
+tests
+database
+sessions
+.vscode
+database
+Version vieja
