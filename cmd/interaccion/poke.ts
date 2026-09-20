@@ -27,7 +27,7 @@ export default {
 			const senderName = senderUser?.pushName || senderUser?.username || msg.pushName || sender.split("@")[0];
 
 			const baseUrl = DL_CONFIG.alya.BASE_URL.replace(/\/+$/, "");
-			const apiUrl = `${baseUrl}/sfw/interaction?inter=poke&key=${DL_CONFIG.alya.API_KEY}`;
+			const apiUrl = `${baseUrl}/sfw/interaction?inter=push&key=${DL_CONFIG.alya.API_KEY}`;
 
 			const response = await request(apiUrl, {
 				signal: AbortSignal.timeout(10000),
