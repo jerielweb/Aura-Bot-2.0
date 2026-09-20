@@ -52,7 +52,7 @@ export default {
 				caption = `\`${senderName}\` ${fytBold("fuma con")} \`${targetName}\` 🚬`;
 				mentions = [sender, targetJid];
 			} else {
-				caption = `\`${senderName}\` ${fytBold("esta fumando tranquil o/a")} 🚬`;
+				caption = `\`${senderName}\` ${fytBold("esta fumando")} 🚬`;
 			}
 
 			await react("✅");
