@@ -49,10 +49,11 @@ export default {
 			if (targetJid) {
 				const targetUser = db.getUser(targetJid);
 				const targetName = targetUser?.pushName || targetUser?.username || targetJid.split("@")[0];
-				caption = `\`${senderName}\` ${fytBold("lloró por")} \`${targetName}\` 😢`;
+				caption = `\`${senderName}\` ${fytBold("llora por culpa de")} \`${targetName}\` 😢`;
 				mentions = [sender, targetJid];
 			} else {
-				caption = `\`${senderName}\` ${fytBold("quiere llorar")} 😢`;
+				
+				caption = `\`${senderName}\` esta  llorando 😢`;
 			}
 
 			await react("✅");
