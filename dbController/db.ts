@@ -7,7 +7,7 @@ if (!existsSync(DATA_BASE_DIR)) {
   mkdirSync(DATA_BASE_DIR, { recursive: true });
 }
 
-const db_instance = new DataBase(`${DATA_BASE_DIR}/Aura.db`, { verbose: console.log });
+const db_instance = new DataBase(`${DATA_BASE_DIR}/Aura.db`);
 db_instance.pragma("journal_mode = WAL");
 db_instance.pragma("synchronous = NORMAL");
 db_instance.pragma("foreign_keys = ON");
@@ -41,11 +41,25 @@ db_instance.exec(`
     jid TEXT PRIMARY KEY,
     bot_id TEXT,
     bot_name TEXT,
+    phone_number TEXT,
+    lid TEXT,
+    groups TEXT DEFAULT '[]',
     isMain INTEGER DEFAULT 0,
     status TEXT DEFAULT 'offline',
     data TEXT DEFAULT '{}'
   );
 `);
+
+for (const column of [
+  ["phone_number", "TEXT"],
+  ["lid", "TEXT"],
+  ["groups", "TEXT DEFAULT '[]'"],
+] as const) {
+  const exists = db_instance
+    .prepare("SELECT 1 FROM pragma_table_info('bots') WHERE name = ?")
+    .get(column[0]);
+  if (!exists) db_instance.exec(`ALTER TABLE bots ADD COLUMN ${column[0]} ${column[1]}`);
+}
 
 const hierarchy = ["user", "premium", "mod", "coowner", "owner"] as const;
 type UserRole = typeof hierarchy[number];
@@ -74,12 +88,12 @@ const stmts = {
 
   getBot: db_instance.prepare("SELECT * FROM bots WHERE jid = ?"),
   insertBot: db_instance.prepare(
-    "INSERT INTO bots (jid, bot_id, bot_name, isMain, status, data) VALUES (?, ?, ?, ?, ?, ?)",
+    "INSERT INTO bots (jid, bot_id, bot_name, phone_number, lid, groups, isMain, status, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
   ),
   updateBot: db_instance.prepare(
-    "UPDATE bots SET bot_id = ?, bot_name = ?, isMain = ?, status = ?, data = ? WHERE jid = ?",
+    "UPDATE bots SET bot_id = ?, bot_name = ?, phone_number = ?, lid = ?, groups = ?, isMain = ?, status = ?, data = ? WHERE jid = ?",
   ),
-  getAllBots: db_instance.prepare("SELECT jid, bot_id, bot_name, isMain, status, data FROM bots"),
+  getAllBots: db_instance.prepare("SELECT jid, bot_id, bot_name, phone_number, lid, groups, isMain, status, data FROM bots"),
   deleteBot: db_instance.prepare("DELETE FROM bots WHERE jid = ?"),
 };
 
@@ -97,6 +111,15 @@ function safeJson<T = Record<string, any>>(value: string | null | undefined): T 
     return JSON.parse(value) as T;
   } catch {
     return {} as T;
+  }
+}
+
+function safeJsonArray(value: string | null | undefined): string[] {
+  try {
+    const parsed = JSON.parse(value || "[]");
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [];
   }
 }
 
@@ -230,6 +253,9 @@ function getBot(jid: string) {
     const defaultBot = {
       bot_id: key,
       bot_name: null,
+      phone_number: null,
+      lid: null,
+      groups: [],
       isMain: 0,
       status: "offline",
       data: {},
@@ -239,6 +265,9 @@ function getBot(jid: string) {
       key,
       defaultBot.bot_id,
       defaultBot.bot_name,
+      defaultBot.phone_number,
+      defaultBot.lid,
+      JSON.stringify(defaultBot.groups),
       defaultBot.isMain,
       defaultBot.status,
       JSON.stringify(defaultBot.data),
@@ -252,6 +281,9 @@ function getBot(jid: string) {
     ...jsonData,
     bot_id: row.bot_id ?? jsonData.bot_id ?? key,
     bot_name: row.bot_name ?? jsonData.bot_name ?? null,
+    phone_number: row.phone_number ?? jsonData.phone_number ?? null,
+    lid: row.lid ?? jsonData.lid ?? null,
+    groups: safeJsonArray(row.groups ?? jsonData.groups),
     isMain: Number(row.isMain ?? jsonData.isMain ?? 0),
     status: row.status ?? jsonData.status ?? "offline",
     data: jsonData,
@@ -377,6 +409,9 @@ export const db = {
         key,
         merged.bot_id ?? key,
         merged.bot_name ?? null,
+        merged.phone_number ?? null,
+        merged.lid ?? null,
+        JSON.stringify(Array.isArray(merged.groups) ? merged.groups : []),
         Number(Boolean(merged.isMain ?? 0)),
         merged.status ?? "offline",
         JSON.stringify(payload),
@@ -387,6 +422,9 @@ export const db = {
     stmts.updateBot.run(
       merged.bot_id ?? key,
       merged.bot_name ?? row.bot_name ?? null,
+      merged.phone_number ?? row.phone_number ?? null,
+      merged.lid ?? row.lid ?? null,
+      JSON.stringify(Array.isArray(merged.groups) ? merged.groups : safeJsonArray(row.groups)),
       Number(Boolean(merged.isMain ?? row.isMain ?? 0)),
       merged.status ?? row.status ?? "offline",
       JSON.stringify(payload),
@@ -412,7 +450,27 @@ export const db = {
   },
 
   setPrimary(groupJid: string, botJid: string) {
-    this.setGroup(groupJid, { primaryBot: normalizeJid(botJid) });
+    this.setGroup(groupJid, { primaryBot: String(botJid || "").trim() || null });
+  },
+
+  addBotGroup(botJid: string, groupJid: string) {
+    const group = String(groupJid || "").trim();
+    if (!group.endsWith("@g.us")) return;
+
+    const bot = getBot(botJid);
+    const groups = Array.isArray(bot.groups) ? bot.groups : [];
+    if (!groups.includes(group)) this.setBot(botJid, { groups: [...groups, group] });
+  },
+
+  getBotById(botId: string) {
+    const normalized = String(botId || "").trim();
+    if (!normalized) return null;
+
+    return this.getAllBots().find((bot) =>
+      bot.bot_id === normalized ||
+      normalizeJid(bot.bot_id) === normalizeJid(normalized) ||
+      normalizeJid(bot.jid) === normalizeJid(normalized),
+    ) ?? null;
   },
 
   deleteBot(jid: string) {
@@ -442,8 +500,12 @@ export const db = {
       return {
         jid: row.jid,
         ...jsonData,
+        data: jsonData,
         bot_id: row.bot_id ?? jsonData.bot_id ?? row.jid,
         bot_name: row.bot_name ?? jsonData.bot_name ?? null,
+        phone_number: row.phone_number ?? jsonData.phone_number ?? null,
+        lid: row.lid ?? jsonData.lid ?? null,
+        groups: safeJsonArray(row.groups ?? jsonData.groups),
         isMain: Number(row.isMain ?? jsonData.isMain ?? 0),
         status: row.status ?? jsonData.status ?? "offline",
       };

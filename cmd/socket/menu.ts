@@ -48,6 +48,13 @@ export default {
       general: "system",
       socket: "socket",
       soporte: "system",
+      download: "download",
+      media: "download",
+      system: "system",
+      admin: "admin",
+      administrador: "admin",
+      owner: "owner",
+      propietario: "owner",
     };
 
     let requestedCategory: string | null = null;

@@ -43,12 +43,7 @@ export function logInfo(message: string) {
   );
 }
 
-export function alertLog(message: string) {
-  const timestamp = TimeZone();
-  console.warn(
-    `${chalk.yellow("[ALERT]")} ${chalk.gray(timestamp)} ${chalk.white(message)}`,
-  );
-}
+
 
 export function errorLog(message: string) {
   const timestamp = TimeZone();
@@ -57,18 +52,10 @@ export function errorLog(message: string) {
   );
 }
 
-export function textLog(message: string) {
-  const timestamp = TimeZone();
-  console.log(
-    `${chalk.gray("[TEXTO]")} ${chalk.gray(timestamp)} ${chalk.white(message)}`,
-  );
-}
-
 export function cmdLog({
   numeroReal,
   rango,
   commandName,
-  isGroup,
   text,
   jidRemitente,
   pushName,
@@ -77,30 +64,27 @@ export function cmdLog({
 }: CmdLogInput) {
   if (!commandName) return;
 
-  const rawSender = jidRemitente
-    ? jidRemitente.split("@")[0]
-    : String(numeroReal ?? "");
-  const senderNumber = rawSender ? rawSender.split(":")[0] : null;
+  const rawSender = jidRemitente || String(numeroReal ?? "");
+  const senderNumber = rawSender.split("@")[0].split(":")[0];
   const nombreUsuario = pushName || "Usuario";
-  const botType = sock?.isSubBot ? `subbot:${sock.subBotId}` : "main";
-  const textoMensaje = text ? String(text).trim() : "";
-  const grupo = groupMetadata?.subject ? ` | ${groupMetadata.subject}` : "";
+  const botName = sock?.isSubBot ? "Sub-Bot" : "Bot";
+  const botNumber = sock?.subBotId ? `+${sock.subBotId}` : "Principal";
+  const groupName = groupMetadata?.subject || "Chat privado";
+  const commandText = text ? String(text).trim() : "{ Sin argumentos }";
+  const timestamp = new Date().toLocaleString("es-CR", {
+    timeZone: "America/Costa_Rica",
+    hour12: false,
+  });
 
-  const resumen = [
-    "[CMD]",
-    botType,
-    nombreUsuario,
-    rango || "USER",
-    isGroup ? "GROUP" : "DM",
-    `+${String(senderNumber ?? "desconocido")}`,
-    commandName,
-    textoMensaje ? `| ${textoMensaje}` : "",
-    grupo,
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  console.log(chalk.cyan(resumen));
+  console.log(chalk.cyan("╭───────────────────────────────────────────────╮"));
+  console.log(`${chalk.cyan("│")} ${chalk.gray("🤖\u00A0Bot:")}       ${chalk.blue(`${botName} (${botNumber})`)}`);
+  console.log(`${chalk.cyan("│")} ${chalk.gray("👤\u00A0Usuario:")}   ${chalk.white(`${nombreUsuario} (+${senderNumber || "desconocido"})`)}`);
+  console.log(`${chalk.cyan("│")} ${chalk.gray("🛡️\u00A0Rango:")}     ${chalk.yellow(rango || "USUARIO")}`);
+  console.log(`${chalk.cyan("│")} ${chalk.gray("👥\u00A0Grupo:")}     ${chalk.green(groupName)}`);
+  console.log(`${chalk.cyan("│")} ${chalk.gray("🕒\u00A0Fecha:")}     ${chalk.magenta(timestamp)}`);
+  console.log(chalk.cyan("├───────────────────────────────────────────────┤"));
+  console.log(`${chalk.cyan("│")} ${chalk.cyan.bold("COMANDO")} ${chalk.white(`> ${commandName}`)} ${chalk.gray(`${commandText}`)}`);
+  console.log(chalk.cyan("╰───────────────────────────────────────────────╯"));
 }
 
 export function connectionLog(message: string, level: "info" | "warn" | "error" | "alert" = "info") {

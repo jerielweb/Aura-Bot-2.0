@@ -2,7 +2,7 @@ import { readdir, watch, stat } from "node:fs/promises";
 import type { Dirent } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { logInfo, alertLog, errorLog } from "./logger.ts";
+import { logInfo, errorLog } from "./logger.ts";
 
 const plugins = new Map<string, any>();
 const PLUGINS_DIR = path.resolve("./cmd");
@@ -67,11 +67,6 @@ async function loadPlugin(filePath: string) {
     const url = `${pathToFileURL(filePath).href}?t=${Date.now()}`;
     const mod = await import(url);
     const plugin = normalizePlugin(mod.default);
-
-    if (!plugin) {
-      alertLog(`Plugin sin estructura válida: ${filePath}`);
-      return;
-    }
 
     for (const [key, value] of plugins.entries()) {
       if (value === plugin) {

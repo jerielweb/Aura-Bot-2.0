@@ -58,7 +58,7 @@ export default {
 	name: ["system", "sys", "info"],
 	category: "system",
 	description: "Muestra los componentes reales del sistema asignado.",
-	ownerOnly: true,
+	ownerOnly: false,
 
 	async run({ sock, from, msg}: any) {
 		const cpus = os.cpus();

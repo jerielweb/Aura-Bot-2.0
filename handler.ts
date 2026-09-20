@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import { LRUCache } from "lru-cache";
 import { jidNormalizedUser } from "@whiskeysockets/baileys";
-import { cmdLog, textLog } from "./core/logger.ts";
+import { cmdLog } from "./core/logger.ts";
 import { NOT_CMD_FOUND, ERROR_CMD, NOT_BOT_ADMIN, NOT_BOT_USER, NOT_PRIVATE, NOT_OWNER, NOT_GROUP, NOT_ADMIN, NOT_MOD, NOT_PREMIUM } from "./core/socketText.ts";
 import {db} from "./dbController/db.ts";
 
@@ -77,6 +77,16 @@ function cleanJid(jid = "") {
   const userPart = raw.slice(0, atIndex).split(":")[0];
   const domainPart = raw.slice(atIndex + 1);
   return `${userPart}@${domainPart}`;
+}
+
+function botIdentityMatches(primaryBot: string, botJid: string, botId?: string | null) {
+  const configured = cleanJid(primaryBot);
+  if (!configured) return false;
+
+  return [botJid, botId]
+    .map((value) => cleanJid(String(value || "")))
+    .filter(Boolean)
+    .some((candidate) => candidate === configured || candidate.split("@")[0] === configured.split("@")[0]);
 }
 
 function getPhoneNumberFromJid(jid?: string | null): string | null {
@@ -353,8 +363,9 @@ export async function handleMessage(
 
       const primaryBot = runtimeDb.getPrimary(from);
       if (primaryBot && cmdName !== "delprimary" && cmdName !== "setprimary") {
-        const myId = cleanJid(botJid).split("@")[0];
-        if (primaryBot !== myId) return;
+        const storedBot = runtimeDb.getBot?.(botJid);
+        const botId = sock.subBotId || storedBot?.bot_id || null;
+        if (!botIdentityMatches(primaryBot, botJid, botId)) return;
       }
     }
 
@@ -384,12 +395,25 @@ export async function handleMessage(
 
       if (contactChanged) runtimeDb.setUser?.(sender, nextContact);
     }
-    const botUserNum = cleanJid(sock.user?.id || "").split("@")[0];
+    const botUserJid = cleanJid(sock.user?.id || "");
+    const storedBot = runtimeDb.getBot?.(botUserJid) ?? {};
+    const botIdentities = [
+      botUserJid,
+      sock.subBotId,
+      storedBot.bot_id,
+      storedBot.lid ? `${storedBot.lid}@lid` : null,
+    ]
+      .filter(Boolean)
+      .map((identity) => cleanJid(String(identity)));
+    const botUserNum = botUserJid.split("@")[0];
 
     const isBotUser =
+      Boolean(msg.key?.fromMe && isCmd) ||
       (!!mainBotNum && senderNum === cleanJid(mainBotNum).split("@")[0]) ||
       senderNum === botUserNum ||
-      sender === botJid;
+      sender === botJid ||
+      botIdentities.includes(sender) ||
+      botIdentities.includes(senderLid);
 
     const configuredOwner = await matchesConfiguredNumber(
       config.ownerNumber ?? [],
@@ -484,8 +508,6 @@ export async function handleMessage(
         groupMetadata: groupMeta ? { subject: groupName || undefined } : null,
         sock: { isSubBot: Boolean(sock?.isSubBot), subBotId: sock?.subBotId },
       });
-    } else if (body && !msg.key?.fromMe) {
-      textLog(`[${botLabel}] ${msgTypeLabel}: ${body}`);
     }
 
     logger.message?.(logPayload);
@@ -500,6 +522,7 @@ export async function handleMessage(
 
     const ctx = {
       sock,
+      db: runtimeDb,
       msg,
       from,
       sender,

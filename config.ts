@@ -1,5 +1,29 @@
+import os from 'os';
+import path from 'path';
+import fs from 'fs';
+
+export function setupCustomTmp(): string {
+  const customTmpDir = process.env.GLOBAL_CUSTOM_TMP
+    || path.join(process.cwd(), './cache');
+
+  if (!fs.existsSync(customTmpDir)) {
+    fs.mkdirSync(customTmpDir, { recursive: true });
+  }
+
+  process.env.TMPDIR = customTmpDir;
+  process.env.TEMP = customTmpDir;
+  process.env.TMP = customTmpDir;
+
+  os.tmpdir = () => customTmpDir;
+
+  return customTmpDir;
+}
+
+setupCustomTmp();
+
+
 // Configuracion de las apis externas
-export const apis = {
+export const DL_CONFIG = {
   alya: {
     BASE_URL: "https://api.alyacore.xyz/",
     API_KEY: "oboe",
@@ -17,6 +41,7 @@ export const apis = {
     API_KEY: null,
   }
 };
+
 
 // Configuracion de fabrica de los bots
 globalThis.DEFAULT_PREFIXES = [".", "#", "/", "!", "-", "%", "$"];

@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import "./config.ts";
 import { connectToWhatsApp } from "./core/conection.ts";
+import { startSavedSubBots } from "./core/subbotManager.ts";
 import { loadPlugins, watchPlugins } from "./core/cmdLoader.ts";
 import { displayBanner, logInfo, connectionLog } from "./core/logger.ts";
 
@@ -39,6 +40,7 @@ async function mainBot() {
   logInfo("Inicializando bot principal...");
   await loadPlugins();
   watchPlugins();
+  await startSavedSubBots();
   connectionLog("Conectando a WhatsApp...");
   await connectToWhatsApp("main", false);
 }
