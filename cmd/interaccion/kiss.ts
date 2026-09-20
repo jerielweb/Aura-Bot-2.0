@@ -7,33 +7,33 @@ export default {
 	description: "Envía una reacción de beso con mención.",
 	category: "interaction",
 
-	async run({ args, reply, react, msg, from, sender, text }: any) {
+	async run({ args, reply, react, msg, from, sender, text, db }: any) {
 		await react("💋");
 
 		try {
 			// Detectar menciones del mensaje
-			let targetJid = sender; // Por defecto se menciona a sí mismo
+			let targetJid = sender;
 			
-			// 1. Intentar obtener menciones del contexto de WhatsApp
 			const mentionedJid = msg?.message?.extendedTextMessage?.contextInfo?.mentionedJid;
 			if (mentionedJid && mentionedJid.length > 0) {
 				targetJid = mentionedJid[0];
-			}
-			// 2. O si hay quoted (mensaje citado)
-			else if (msg?.message?.extendedTextMessage?.contextInfo?.participant) {
+			} else if (msg?.message?.extendedTextMessage?.contextInfo?.participant) {
 				targetJid = msg.message.extendedTextMessage.contextInfo.participant;
-			}
-			// 3. O parsear @numero del texto
-			else if (text) {
+			} else if (text) {
 				const mentionMatch = text.match(/@(\d+)/);
 				if (mentionMatch) {
 					targetJid = `${mentionMatch[1]}@s.whatsapp.net`;
 				}
 			}
 
-			// Obtener nombres (pushName)
-			const senderName = msg.pushName || sender.split("@")[0];
-			const targetName = targetJid === sender ? senderName : (targetJid.split("@")[0]);
+			// Obtener nombres desde DB o pushName
+			const senderUser = db.getUser(sender);
+			const targetUser = db.getUser(targetJid);
+			
+			const senderName = senderUser?.pushName || senderUser?.username || msg.pushName || sender.split("@")[0];
+			const targetName = targetJid === sender 
+				? senderName 
+				: (targetUser?.pushName || targetUser?.username || targetJid.split("@")[0]);
 
 			// Limpiar y construir URL
 			const baseUrl = DL_CONFIG.alya.BASE_URL.replace(/\/+$/, "");
@@ -64,14 +64,14 @@ export default {
 				throw new Error("API no devolvió resultado válido");
 			}
 
-			// Caption con menciones
-			const caption = `╭〔 💋 ${fytBold("KISS")} 〕━⬣\n\n┃ @${senderName} 𝐛𝐞𝐬ó 𝐚 @${targetName} con amor 💕\n╰━━〔 ⚡ ${fytBold("SYSTEM")} 〕━━⬣`;
+			// Caption con backticks
+			const caption = `╭〔 💋 ${fytBold("KISS")} 〕━⬣\n\n┃ \`${senderName}\` 𝐛𝐞𝐬ó 𝐚 \`${targetName}\` con amor 💕\n╰━━〔 ⚡ ${fytBold("SYSTEM")} 〕━━⬣`;
 
 			await react("✅");
 			await reply({
 				video: { url: data.result },
 				caption,
-				mentions: [sender, targetJid], // ← Menciones clickeables
+				mentions: [sender, targetJid], // Menciones clickeables
 				gifPlayback: true,
 				mimetype: "video/mp4",
 			});
