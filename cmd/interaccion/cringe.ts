@@ -52,7 +52,6 @@ export default {
 				caption = `\`${senderName}\` ${fytBold("sintió cringe")} 😬`;
 			}
 
-			await react("✅");
 			await reply({
 				video: { url: data.result },
 				caption,
