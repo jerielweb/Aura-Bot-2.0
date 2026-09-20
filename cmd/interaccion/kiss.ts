@@ -4,14 +4,38 @@ import { request } from "undici";
 
 export default {
 	name: ["kiss", "besar"],
-	description: "Envía una reacción de beso.",
+	description: "Envía una reacción de beso con mención.",
 	category: "interaction",
 
-	async run({ reply, react }: any) {
+	async run({ args, reply, react, msg, from, sender, text }: any) {
 		await react("💋");
 
 		try {
-			// Limpiar barra al final de la URL
+			// Detectar menciones del mensaje
+			let targetJid = sender; // Por defecto se menciona a sí mismo
+			
+			// 1. Intentar obtener menciones del contexto de WhatsApp
+			const mentionedJid = msg?.message?.extendedTextMessage?.contextInfo?.mentionedJid;
+			if (mentionedJid && mentionedJid.length > 0) {
+				targetJid = mentionedJid[0];
+			}
+			// 2. O si hay quoted (mensaje citado)
+			else if (msg?.message?.extendedTextMessage?.contextInfo?.participant) {
+				targetJid = msg.message.extendedTextMessage.contextInfo.participant;
+			}
+			// 3. O parsear @numero del texto
+			else if (text) {
+				const mentionMatch = text.match(/@(\d+)/);
+				if (mentionMatch) {
+					targetJid = `${mentionMatch[1]}@s.whatsapp.net`;
+				}
+			}
+
+			// Obtener nombres (pushName)
+			const senderName = msg.pushName || sender.split("@")[0];
+			const targetName = targetJid === sender ? senderName : (targetJid.split("@")[0]);
+
+			// Limpiar y construir URL
 			const baseUrl = DL_CONFIG.alya.BASE_URL.replace(/\/+$/, "");
 			const apiUrl = `${baseUrl}/sfw/interaction?inter=kiss&key=${DL_CONFIG.alya.API_KEY}`;
 
@@ -33,17 +57,21 @@ export default {
 			try {
 				data = JSON.parse(bodyText);
 			} catch {
-				throw new Error(`Respuesta no es JSON: ${bodyText.slice(0, 100)}`);
+				throw new Error(`Respuesta no es JSON`);
 			}
 
 			if (!data?.status || !data?.result) {
 				throw new Error("API no devolvió resultado válido");
 			}
 
+			// Caption con menciones
+			const caption = `╭〔 💋 ${fytBold("KISS")} 〕━⬣\n\n┃ @${senderName} 𝐛𝐞𝐬ó 𝐚 @${targetName} con amor 💕\n╰━━〔 ⚡ ${fytBold("SYSTEM")} 〕━━⬣`;
+
 			await react("✅");
 			await reply({
 				video: { url: data.result },
-				caption: `╭〔 💋 ${fytBold("KISS")} 〕━⬣\n\n┃ > Beso enviado\n╰━━〔 ⚡ ${fytBold("SYSTEM")} 〕━━⬣`,
+				caption,
+				mentions: [sender, targetJid], // ← Menciones clickeables
 				gifPlayback: true,
 				mimetype: "video/mp4",
 			});
