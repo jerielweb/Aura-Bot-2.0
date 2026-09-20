@@ -4,7 +4,7 @@ import { request } from "undici";
 
 export default {
 	name: ["poke", "picar"],
-	description: "Envía una reacción de picar.",
+	description: "Envía una reacción de picar (nekos.best).",
 	category: "interaction",
 
 	async run({ args, reply, react, msg, from, sender, text, db }: any) {
@@ -26,8 +26,8 @@ export default {
 			const senderUser = db.getUser(sender);
 			const senderName = senderUser?.pushName || senderUser?.username || msg.pushName || sender.split("@")[0];
 
-			const baseUrl = DL_CONFIG.alya.BASE_URL.replace(/\/+$/, "");
-			const apiUrl = `${baseUrl}/sfw/interaction?inter=push&key=${DL_CONFIG.alya.API_KEY}`;
+			// nekos.best: /api/v2/poke — sin API key
+			const apiUrl = `${DL_CONFIG.nekosBest.BASE_URL}/poke`;
 
 			const response = await request(apiUrl, {
 				signal: AbortSignal.timeout(10000),
@@ -41,7 +41,9 @@ export default {
 			try { data = JSON.parse(bodyText); }
 			catch { throw new Error("Respuesta no es JSON"); }
 
-			if (!data?.status || !data?.result) throw new Error("API no devolvió resultado válido");
+			// nekos.best devuelve: { results: [ { url: "....gif" } ] }
+			const gifUrl = data?.results?.[0]?.url;
+			if (!gifUrl) throw new Error("nekos.best no devolvió resultado");
 
 			let caption = "";
 			let mentions = [sender];
@@ -52,16 +54,16 @@ export default {
 				caption = `\`${senderName}\` ${fytBold("picó a")} \`${targetName}\` 👉`;
 				mentions = [sender, targetJid];
 			} else {
-				caption = `\`${senderName}\` ${fytBold("quiere picar")} 👉`;
+				caption = `\`${senderName}\` ${fytBold("quiere picar con el dedo")} 👉`;
 			}
 
 			await react("✅");
+
+			// ️ GIF directo: SIN gifPlayback ni mimetype (ya es .gif)
 			await reply({
-				video: { url: data.result },
+				video: { url: gifUrl },
 				caption,
 				mentions,
-				gifPlayback: true,
-				mimetype: "video/mp4",
 			});
 		} catch (error: any) {
 			await react("❌");
