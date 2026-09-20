@@ -39,6 +39,10 @@ export const DL_CONFIG = {
   faaApi: {
     BASE_URL: "https://api-faa.my.id/",
     API_KEY: null,
+  },
+  nekosApi: {
+    BASE_URL: "https://nekos.best/api/v2/",
+    API_KEY: null,
   }
 };
 
