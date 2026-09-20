@@ -4,16 +4,16 @@ import { request } from "undici";
 
 export default {
 	name: ["kiss", "besar"],
-	description: "Envía una reacción de beso con mención.",
+	description: "Envía una reacción de beso.",
 	category: "interaction",
 
 	async run({ args, reply, react, msg, from, sender, text, db }: any) {
 		await react("💋");
 
 		try {
-			// Detectar menciones del mensaje
-			let targetJid = sender;
-			
+			// Detectar si hay target mencionado
+			let targetJid = null;
+
 			const mentionedJid = msg?.message?.extendedTextMessage?.contextInfo?.mentionedJid;
 			if (mentionedJid && mentionedJid.length > 0) {
 				targetJid = mentionedJid[0];
@@ -26,16 +26,11 @@ export default {
 				}
 			}
 
-			// Obtener nombres desde DB o pushName
+			// Nombre del sender desde DB
 			const senderUser = db.getUser(sender);
-			const targetUser = db.getUser(targetJid);
-			
 			const senderName = senderUser?.pushName || senderUser?.username || msg.pushName || sender.split("@")[0];
-			const targetName = targetJid === sender 
-				? senderName 
-				: (targetUser?.pushName || targetUser?.username || targetJid.split("@")[0]);
 
-			// Limpiar y construir URL
+			// Construir URL
 			const baseUrl = DL_CONFIG.alya.BASE_URL.replace(/\/+$/, "");
 			const apiUrl = `${baseUrl}/sfw/interaction?inter=kiss&key=${DL_CONFIG.alya.API_KEY}`;
 
@@ -48,30 +43,32 @@ export default {
 			});
 
 			const bodyText = await response.body.text();
-
-			if (response.statusCode !== 200) {
-				throw new Error(`HTTP ${response.statusCode}`);
-			}
+			if (response.statusCode !== 200) throw new Error(`HTTP ${response.statusCode}`);
 
 			let data: any;
-			try {
-				data = JSON.parse(bodyText);
-			} catch {
-				throw new Error(`Respuesta no es JSON`);
-			}
+			try { data = JSON.parse(bodyText); }
+			catch { throw new Error("Respuesta no es JSON"); }
 
-			if (!data?.status || !data?.result) {
-				throw new Error("API no devolvió resultado válido");
-			}
+			if (!data?.status || !data?.result) throw new Error("API no devolvió resultado válido");
 
-			// Caption con backticks
-			const caption = `╭〔 💋 ${fytBold("KISS")} 〕━⬣\n\n┃ \`${senderName}\` 𝐛𝐞𝐬ó 𝐚 \`${targetName}\` con amor 💕\n╰━━〔 ⚡ ${fytBold("SYSTEM")} 〕━━⬣`;
+			// Caption limpio SIN marco
+			let caption = "";
+			let mentions = [sender];
+
+			if (targetJid) {
+				const targetUser = db.getUser(targetJid);
+				const targetName = targetUser?.pushName || targetUser?.username || targetJid.split("@")[0];
+				caption = `\`${senderName}\` ${fytBold("besó a")} \`${targetName}\` 💕`;
+				mentions = [sender, targetJid];
+			} else {
+				caption = `\`${senderName}\` ${fytBold("quiere un beso")} 💋`;
+			}
 
 			await react("✅");
 			await reply({
 				video: { url: data.result },
 				caption,
-				mentions: [sender, targetJid], // Menciones clickeables
+				mentions,
 				gifPlayback: true,
 				mimetype: "video/mp4",
 			});
