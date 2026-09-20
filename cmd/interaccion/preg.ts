@@ -53,7 +53,7 @@ export default {
 				caption = `\`${senderName}\` ${fytBold("preñó a")} \`${targetName}\` 🤰👶`;
 				mentions = [sender, targetJid];
 			} else {
-				caption = `\`${senderName}\` ${fytBold("quiere preñar ah alguien")} 🤰`;
+				caption = `\`${senderName}\` ${fytBold("quiere preñar a alguien")} 🤰`;
 			}
 
 			await react("✅");
