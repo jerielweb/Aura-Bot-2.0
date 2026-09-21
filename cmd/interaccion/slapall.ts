@@ -3,7 +3,7 @@ import { DL_CONFIG } from "../../config.ts";
 import { request } from "undici";
 
 export default {
-        name: ["slap",
+        name: ["slapall",
         description: "Envía una reacción de bofetada.",
         category: "interaction",
 
