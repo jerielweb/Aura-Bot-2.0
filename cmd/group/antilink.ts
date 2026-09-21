@@ -6,7 +6,7 @@ const OFF = ["off", "0", "false", "desactivar", "disable"];
 export default {
   name: ["antilink", "antienlace", "antigp"],
   category: "group",
-  description: "Bloquea enlaces de otros grupos.",
+  description: "Bloquea enlaces de otros grupos y canales.",
   groupOnly: true,
   adminOnly: true,
   botAdmin: true,

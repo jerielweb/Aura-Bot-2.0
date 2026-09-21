@@ -20,6 +20,39 @@ function addWarning(db: any, groupJid: string, userJid: string, reason: string):
 
 type ToxicMatch = { word: string; reason: string };
 
+const prohibitedLinkRegex = /(?:https?:\/\/)?(?:www\.)?(?:chat\.whatsapp\.com\/[\w-]+|whatsapp\.com\/channel\/[\w-]+)/i;
+
+export async function handleAntilink(
+  sock: any,
+  message: any,
+  text: string,
+  isAdmin: boolean,
+  isOwner: boolean,
+  isBotAdmin: boolean,
+): Promise<boolean> {
+  const groupJid = message?.key?.remoteJid;
+  if (!groupJid?.endsWith("@g.us") || !text || isAdmin || isOwner || message.key?.fromMe) return false;
+  if (!prohibitedLinkRegex.test(text) || !isBotAdmin) return false;
+
+  const userJid = message.key?.participant || message.participant;
+  if (!userJid) return false;
+
+  try {
+    await sock.sendMessage(groupJid, { delete: message.key });
+    await sock.sendMessage(groupJid, {
+      text: `> 🚫 *Anti-Link Activado*\n\nSe ha eliminado el mensaje de *${message.pushName || "Usuario"}* y será expulsado por enviar un enlace de grupo o canal.\n\n⚠️ Los enlaces de grupos y canales no están permitidos.`,
+      quoted: message,
+      mentions: [userJid],
+    });
+    await sock.groupParticipantsUpdate(groupJid, [userJid], "remove");
+    console.log(`[ANTILINK] Mensaje eliminado y usuario ${userJid} expulsado.`);
+    return true;
+  } catch (error) {
+    console.error("Error en Anti-Link:", error);
+    return false;
+  }
+}
+
 function normalizeText(value: string): string {
   return value
     .toLowerCase()

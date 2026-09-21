@@ -4,7 +4,7 @@ import { jidNormalizedUser } from "@whiskeysockets/baileys";
 import { cmdLog } from "./core/logger.ts";
 import { fytBold, NOT_CMD_FOUND, ERROR_CMD, NOT_BOT_ADMIN, NOT_BOT_USER, NOT_PRIVATE, NOT_OWNER, NOT_GROUP, NOT_ADMIN, NOT_MOD, NOT_PREMIUM } from "./core/socketText.ts";
 import {db} from "./dbController/db.ts";
-import { handleGroupStatus, handleGroupToxic } from "./core/groupModeration.ts";
+import { handleAntilink, handleGroupStatus, handleGroupToxic } from "./core/groupModeration.ts";
 
 function getMessageWeek(date = new Date()): string {
   const current = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -552,7 +552,7 @@ export async function handleMessage(
       if (groupData?.antilink && body && !isAdmin && !isMod && !isCmd) {
         const checkFn = runtimeOptions.checkAntilink;
         if (checkFn) {
-          const handled = await checkFn({ sock, msg, from, sender, body, isBotAdmin, botLabel });
+          const handled = await checkFn({ sock, msg, from, sender, body, isAdmin, isOwner, isBotAdmin, botLabel });
           if (handled) return;
         }
       }

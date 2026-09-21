@@ -16,7 +16,7 @@ import { getPlugins } from "./cmdLoader.ts";
 import { connectionLog, pairingLog } from "./logger.ts";
 import { db } from "../dbController/db.ts";
 import { jidNormalizedUser } from "@whiskeysockets/baileys";
-import { handleGroupCall } from "./groupModeration.ts";
+import { handleAntilink, handleGroupCall } from "./groupModeration.ts";
 
 export const logger = pino({ level: "silent" });
 
@@ -499,6 +499,8 @@ export async function connectToWhatsApp(
             prefix: globalThis.DEFAULT_PREFIXES ?? ["."],
           },
           getPlugins: () => getPlugins(),
+          checkAntilink: async ({ sock: messageSock, msg, body, isAdmin, isOwner, isBotAdmin }: any) =>
+            handleAntilink(messageSock, msg, body, isAdmin, isOwner, isBotAdmin),
           logger: {
             message: () => {},
             warn: (payload: any) => connectionLog(String(payload), "warn"),
