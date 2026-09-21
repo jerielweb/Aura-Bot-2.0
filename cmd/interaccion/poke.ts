@@ -103,7 +103,7 @@ export default {
 				caption = `\`${senderName}\` ${fytBold("quiere picar con el dedo")} 👉`;
 			}
 
-			await react("✅");
+		
 
 			const video = await convertGifToMp4(gifUrl);
 			await reply({
