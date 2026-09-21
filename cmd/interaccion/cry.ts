@@ -56,7 +56,6 @@ export default {
 				caption = `\`${senderName}\` esta  llorando 😢`;
 			}
 
-			await react("✅");
 			await reply({
 				video: { url: data.result },
 				caption,
