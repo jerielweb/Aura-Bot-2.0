@@ -39,7 +39,14 @@ export default {
 		}
 
 		const currentBot = normalize(sock.subBotId || db.getBot(botJid)?.bot_id || botJid);
-		const targetBot = requestedBot ? db.getBotById?.(requestedBot)?.bot_id : currentBot;
+		const selectedBot = requestedBot ? db.getBotById?.(requestedBot) : db.getBot(botJid);
+		if (requestedBot && !selectedBot) {
+			return reply({ text: "No encontré ese bot. Usa su bot_id completo, por ejemplo: 123456@lid" });
+		}
+		if (selectedBot?.status !== "active") {
+			return reply({ text: "Ese bot no está activo actualmente y no puede ser el primario." });
+		}
+		const targetBot = selectedBot?.bot_id || currentBot;
 		if (!targetBot) {
 			return reply({ text: "No encontré ese bot. Usa su bot_id completo, por ejemplo: 123456@lid" });
 		}

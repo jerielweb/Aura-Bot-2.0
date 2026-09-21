@@ -41,7 +41,7 @@ export const DL_CONFIG = {
     API_KEY: null,
   },
   nekosApi: {
-    BASE_URL: "https://nekos.best/api/v2/",
+    BASE_URL: "https://nekos.best/api/v2",
     API_KEY: null,
   }
 };

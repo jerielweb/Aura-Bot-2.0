@@ -8,7 +8,7 @@ export default {
 	name: ["update", "actualizar", "fix"],
 	category: "system",
 	description: "Actualiza el bot desde los cambios disponibles en Git.",
-	ownerOnly: true,
+	modOnly: true,
 
 	async run({ sock, from, msg }: any) {
 		let initText = `╭〔 🚀 ${fytBold("AURA REED")} 〕⬣\n`;

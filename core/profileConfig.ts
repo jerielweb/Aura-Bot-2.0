@@ -3,6 +3,15 @@ import { fytBold } from "./socketText.ts";
 import { economyUser } from "./economyRuntime.ts";
 export type Profile = Record<string, any>;
 
+type PendingProfileAction = {
+	kind: "marry" | "divorce";
+	from: string;
+	to: string;
+	expiresAt: number;
+};
+
+const pendingProfileActions = new Map<string, PendingProfileAction>();
+
 export const DEFAULT_PFP =
 	"https://i.pinimg.com/736x/af/a3/24/afa324dff15091f93624bb470d60a592.jpg";
 
@@ -29,6 +38,26 @@ export function getProfile(jid: string): Profile {
 export function updateProfile(jid: string, data: Profile) {
 	db.setUser(jid, data);
 	return getProfile(jid);
+}
+
+export function setPendingProfileAction(action: Omit<PendingProfileAction, "expiresAt">) {
+	const key = `${action.kind}:${action.to}`;
+	pendingProfileActions.set(key, { ...action, expiresAt: Date.now() + 5 * 60 * 1000 });
+}
+
+export function getPendingProfileAction(kind: PendingProfileAction["kind"], target: string) {
+	const key = `${kind}:${target}`;
+	const action = pendingProfileActions.get(key);
+	if (!action) return null;
+	if (action.expiresAt <= Date.now()) {
+		pendingProfileActions.delete(key);
+		return null;
+	}
+	return action;
+}
+
+export function clearPendingProfileAction(action: PendingProfileAction) {
+	pendingProfileActions.delete(`${action.kind}:${action.to}`);
 }
 
 export async function getProfilePictureUrl(socket: any, jid: string): Promise<string> {

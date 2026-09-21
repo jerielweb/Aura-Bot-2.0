@@ -7,7 +7,7 @@ export default {
   description: "Intenta robarle monedas a otro usuario del grupo.",
   groupOnly: true,
   async run(ctx: any) {
-    const target = economyTarget(ctx);
+    const target = await economyTarget(ctx);
     if (target === ctx.sender) return ctx.reply("🧠 No puedes robarte a ti mismo.");
     const thief = economyUser(ctx);
     const victim = economyUser(ctx, target);

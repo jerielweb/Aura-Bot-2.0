@@ -1,0 +1,127 @@
+import { readFileSync } from "node:fs";
+import { fytBold } from "./socketText.ts";
+
+const badWordsData = JSON.parse(
+  readFileSync(new URL("../database/badWords.json", import.meta.url), "utf8"),
+);
+
+function getWarnings(group: any): Record<string, any[]> {
+  return group.warns && typeof group.warns === "object" ? group.warns : {};
+}
+
+function addWarning(db: any, groupJid: string, userJid: string, reason: string): number {
+  const group = db.getGroup(groupJid);
+  const warns = getWarnings(group);
+  const history = Array.isArray(warns[userJid]) ? warns[userJid] : [];
+  history.push({ reason, date: new Date().toLocaleDateString("es-CR", { timeZone: "America/Costa_Rica" }) });
+  db.setGroup(groupJid, { warns: { ...warns, [userJid]: history } });
+  return history.length;
+}
+
+type ToxicMatch = { word: string; reason: string };
+
+function normalizeText(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
+const toxicWords: ToxicMatch[] = Object.values(badWordsData.levels)
+  .flatMap((level: any) => level.words.map((word: string) => ({
+    word: normalizeText(word),
+    reason: level.reason,
+  })))
+  .sort((left, right) => right.word.length - left.word.length);
+
+function findToxicMatch(text: string): ToxicMatch | null {
+  const normalized = normalizeText(text);
+  const padded = ` ${normalized} `;
+  return toxicWords.find(({ word }) => padded.includes(` ${word} `)) || null;
+}
+
+export async function handleGroupToxic(sock: any, message: any, text: string, db: any, isAdmin: boolean, isBotAdmin: boolean): Promise<boolean> {
+  const groupJid = message?.key?.remoteJid;
+  const userJid = message?.key?.participant;
+  if (!groupJid?.endsWith("@g.us") || !userJid || message.key.fromMe || isAdmin || !isBotAdmin) return false;
+  const group = db.getGroup(groupJid);
+  if (!group.antiToxic || !text || text.startsWith(".")) return false;
+  const toxicMatch = findToxicMatch(text);
+  if (!toxicMatch) return false;
+
+  try {
+    await sock.sendMessage(groupJid, { delete: message.key });
+    const count = addWarning(db, groupJid, userJid, `Toxicidad: ${toxicMatch.reason}`);
+    await sock.sendMessage(groupJid, {
+      text: `╭〔 ⚠️ ${fytBold("AURA REED")} 〕⬣\n┃ 🚫 ${fytBold("ANTI-TOXIC SYSTEM")}\n╰━━━━━━━━━━━━⬣\n\n┃ 👤 Usuario: @${userJid.split("@")[0]}\n┃ 📊 Warns: [ ${count}/${group.warnLimit || 3} ]\n┃ 🛡️ Admin: ${fytBold("SYSTEM")} ⚡\n┃ 📌 Acción: Llamada de atención\n┃ 📝 Razón: ${toxicMatch.reason}\n┃ ⏰ Fecha: ${new Date().toLocaleDateString("es-CR", { timeZone: "America/Costa_Rica" })}\n\n┣━━━━━━━━━━━━━━━━⬣\n\n┃ ⚠️ Se ha añadido una\n┃ ⚠️ advertencia al usuario.\n┣━━━━━━━━━━━━━━━━⬣\n\n┃ ❗ El mensaje infractor\n┃ ❗ ha sido eliminado.\n\n╰〔 ${fytBold("SYSTEM ACTIVE")} 〕⬣`,
+      mentions: [userJid],
+    });
+    if (count >= (group.warnLimit || 3)) {
+      await sock.groupParticipantsUpdate(groupJid, [userJid], "remove").catch(() => undefined);
+      db.setGroup(groupJid, { warns: { ...getWarnings(db.getGroup(groupJid)), [userJid]: [] } });
+    }
+    return true;
+  } catch (error) {
+    console.error("Error en Anti-Toxic:", error);
+    return false;
+  }
+}
+
+export async function handleGroupCall(sock: any, call: any, db: any): Promise<void> {
+  const groupJid = call?.groupJid || call?.chatId || call?.from;
+  if (!groupJid?.endsWith("@g.us") || !call?.id || (call.status && call.status !== "offer")) return;
+
+  const group = db.getGroup(groupJid);
+  if (!group.antiCalls) return;
+
+  try {
+    if (typeof sock.rejectCall === "function") await sock.rejectCall(call.id, call.from || groupJid);
+    const userJid = call.from || call.participant;
+    if (!userJid) return;
+    const count = addWarning(db, groupJid, userJid, "Intento de llamada en grupo");
+    await sock.sendMessage(groupJid, {
+      text: `╭〔 ⚠️ 𝐀𝐔𝐑𝐀 𝐑𝐄𝐄𝐃 〕⬣\n┃ 🚫 𝐋𝐋𝐀𝐌𝐀𝐃𝐀 𝐍𝐎 𝐏𝐄𝐑𝐌𝐈𝐓𝐈𝐃𝐀\n╰━━━━━━━━━━━━⬣\n\n┃ 👤 Usuario: @${userJid.split("@")[0]}\n┃ 📊 Warns: [ ${count}/${group.warnLimit || 3} ]\n┃ 🛡️ Razón: Llamada no permitida\n╰〔 ⚡ 𝐒𝐘𝐒𝐓𝐄𝐌 〕⬣`,
+      mentions: [userJid],
+    });
+    if (count >= (group.warnLimit || 3)) {
+      await sock.groupParticipantsUpdate(groupJid, [userJid], "remove").catch(() => undefined);
+      db.setGroup(groupJid, { warns: { ...getWarnings(db.getGroup(groupJid)), [userJid]: [] } });
+    }
+  } catch (error) {
+    console.error("Error en Anti-Calls:", error);
+  }
+}
+
+export async function handleGroupStatus(sock: any, message: any, db: any): Promise<boolean> {
+  const groupJid = message?.key?.remoteJid;
+  if (!groupJid?.endsWith("@g.us")) return false;
+
+  const statusMessage = message.message?.groupStatusMentionMessage || message.message?.groupStatusMessageV2;
+  if (!statusMessage) return false;
+
+  const group = db.getGroup(groupJid);
+  if (!group.antiStatus) return false;
+
+  const statusKey = statusMessage.statusKey;
+  const userJid = statusKey?.participant || message.key?.participant || message.participant || statusKey?.remoteJid;
+  if (!userJid || userJid.endsWith("@broadcast") || message.key?.fromMe) return false;
+
+  try {
+    await sock.sendMessage(groupJid, { delete: { remoteJid: groupJid, id: message.key.id, fromMe: Boolean(message.key.fromMe), ...(message.key.participant ? { participant: message.key.participant } : {}) } });
+    const count = addWarning(db, groupJid, userJid, "Publicar un estado mencionando el grupo");
+    await sock.sendMessage(groupJid, {
+      text: `╭〔 ⚠️ 𝐀𝐔𝐑𝐀 𝐑𝐄𝐄𝐃 〕⬣\n┃ 🚫 𝐄𝐒𝐓𝐀𝐃𝐎 𝐍𝐎 𝐏𝐄𝐑𝐌𝐈𝐓𝐈𝐃𝐎\n╰━━━━━━━━━━━━⬣\n\n┃ 👤 Usuario: @${userJid.split("@")[0]}\n┃ 📊 Warns: [ ${count}/${group.warnLimit || 3} ]\n┃ 🛡️ Razón: Estado mencionando el grupo\n╰〔 ⚡ 𝐒𝐘𝐒𝐓𝐄𝐌 〕⬣`,
+      mentions: [userJid],
+    });
+    if (count >= (group.warnLimit || 3)) {
+      await sock.groupParticipantsUpdate(groupJid, [userJid], "remove").catch(() => undefined);
+      db.setGroup(groupJid, { warns: { ...getWarnings(db.getGroup(groupJid)), [userJid]: [] } });
+    }
+    return true;
+  } catch (error) {
+    console.error("Error en Anti-Status:", error);
+    return false;
+  }
+}

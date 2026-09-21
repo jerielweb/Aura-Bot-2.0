@@ -22,6 +22,7 @@ db_instance.exec(`
     phone_number TEXT,
     role TEXT DEFAULT 'user',
     is_banned INTEGER DEFAULT 0,
+    self INTEGER DEFAULT 0,
     data TEXT DEFAULT '{}'
   );
 
@@ -34,6 +35,9 @@ db_instance.exec(`
     antiToxic INTEGER DEFAULT 0,
     antiSpam INTEGER DEFAULT 0,
     antiStatus INTEGER DEFAULT 0,
+    onlyAdmin INTEGER DEFAULT 0,
+    prefix TEXT DEFAULT NULL,
+    topMsgUsers TEXT DEFAULT '[]',
     data TEXT DEFAULT '{}'
   );
 
@@ -46,6 +50,8 @@ db_instance.exec(`
     groups TEXT DEFAULT '[]',
     isMain INTEGER DEFAULT 0,
     status TEXT DEFAULT 'offline',
+    modPrefix TEXT DEFAULT NULL,
+    modSelf INTEGER DEFAULT 0,
     data TEXT DEFAULT '{}'
   );
 `);
@@ -59,6 +65,20 @@ for (const column of [
     .prepare("SELECT 1 FROM pragma_table_info('bots') WHERE name = ?")
     .get(column[0]);
   if (!exists) db_instance.exec(`ALTER TABLE bots ADD COLUMN ${column[0]} ${column[1]}`);
+}
+
+for (const [table, column, definition] of [
+  ["groups", "prefix", "TEXT"],
+  ["groups", "self", "INTEGER DEFAULT 0"],
+  ["groups", "onlyAdmin", "INTEGER DEFAULT 0"],
+  ["groups", "topMsgUsers", "TEXT DEFAULT '[]'"],
+  ["bots", "modPrefix", "TEXT"],
+  ["bots", "modSelf", "INTEGER DEFAULT 0"],
+] as const) {
+  const exists = db_instance
+    .prepare(`SELECT 1 FROM pragma_table_info('${table}') WHERE name = ?`)
+    .get(column);
+  if (!exists) db_instance.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
 }
 
 const hierarchy = ["user", "premium", "mod", "coowner", "owner"] as const;
@@ -79,21 +99,21 @@ const stmts = {
 
   getGroup: db_instance.prepare("SELECT * FROM groups WHERE jid = ?"),
   insertGroup: db_instance.prepare(
-    "INSERT INTO groups (jid, group_id, group_name, antilink, antiCalls, antiToxic, antiSpam, antiStatus, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "INSERT INTO groups (jid, group_id, group_name, antilink, antiCalls, antiToxic, antiSpam, antiStatus, onlyAdmin, prefix, self, topMsgUsers, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
   ),
   updateGroup: db_instance.prepare(
-    "UPDATE groups SET group_id = ?, group_name = ?, antilink = ?, antiCalls = ?, antiToxic = ?, antiSpam = ?, antiStatus = ?, data = ? WHERE jid = ?",
+    "UPDATE groups SET group_id = ?, group_name = ?, antilink = ?, antiCalls = ?, antiToxic = ?, antiSpam = ?, antiStatus = ?, onlyAdmin = ?, prefix = ?, self = ?, topMsgUsers = ?, data = ? WHERE jid = ?",
   ),
-  getAllGroups: db_instance.prepare("SELECT jid, group_id, group_name, antilink, antiCalls, antiToxic, antiSpam, antiStatus, data FROM groups"),
+  getAllGroups: db_instance.prepare("SELECT jid, group_id, group_name, antilink, antiCalls, antiToxic, antiSpam, onlyAdmin, prefix, self, topMsgUsers, data FROM groups"),
 
   getBot: db_instance.prepare("SELECT * FROM bots WHERE jid = ?"),
   insertBot: db_instance.prepare(
-    "INSERT INTO bots (jid, bot_id, bot_name, phone_number, lid, groups, isMain, status, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "INSERT INTO bots (jid, bot_id, bot_name, phone_number, lid, groups, isMain, status, modPrefix, modSelf, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
   ),
   updateBot: db_instance.prepare(
-    "UPDATE bots SET bot_id = ?, bot_name = ?, phone_number = ?, lid = ?, groups = ?, isMain = ?, status = ?, data = ? WHERE jid = ?",
+    "UPDATE bots SET bot_id = ?, bot_name = ?, phone_number = ?, lid = ?, groups = ?, isMain = ?, status = ?, modPrefix = ?, modSelf = ?, data = ? WHERE jid = ?",
   ),
-  getAllBots: db_instance.prepare("SELECT jid, bot_id, bot_name, phone_number, lid, groups, isMain, status, data FROM bots"),
+  getAllBots: db_instance.prepare("SELECT jid, bot_id, bot_name, phone_number, lid, groups, isMain, status, modPrefix, modSelf, data FROM bots"),
   deleteBot: db_instance.prepare("DELETE FROM bots WHERE jid = ?"),
 };
 
@@ -121,6 +141,15 @@ function safeJsonArray(value: string | null | undefined): string[] {
   } catch {
     return [];
   }
+}
+
+function getCurrentMessageWeek(date = new Date()): string {
+  const current = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = current.getUTCDay() || 7;
+  current.setUTCDate(current.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(current.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((current.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return `${current.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
 }
 
 function getUserRow(input: string, lid?: string | null) {
@@ -199,6 +228,9 @@ function getGroup(jid: string) {
       antiToxic: 0,
       antiSpam: 0,
       antiStatus: 0,
+      onlyAdmin: 0,
+      prefix: null,
+      self: 0,
       privateMode: false,
       adminMode: false,
       primaryBot: null,
@@ -206,6 +238,7 @@ function getGroup(jid: string) {
       goodbye: false,
       welcomeMessage: null,
       goodbyeMessage: null,
+      topMsgUsers: [],
       data: {},
     };
 
@@ -218,6 +251,10 @@ function getGroup(jid: string) {
       defaultGroup.antiToxic,
       defaultGroup.antiSpam,
       defaultGroup.antiStatus,
+      defaultGroup.onlyAdmin,
+      defaultGroup.prefix,
+      defaultGroup.self,
+      JSON.stringify(defaultGroup.topMsgUsers),
       JSON.stringify(defaultGroup.data),
     );
 
@@ -225,6 +262,13 @@ function getGroup(jid: string) {
   }
 
   const jsonData = safeJson<Record<string, any>>(row.data);
+  const storedTopMsgUsers = safeJson<any[]>(row.topMsgUsers ?? jsonData.topMsgUsers);
+  const currentWeek = getCurrentMessageWeek();
+  const hasPreviousWeek = storedTopMsgUsers.length > 0 && storedTopMsgUsers.some((user) => user?.week !== currentWeek);
+  if (hasPreviousWeek) {
+    db_instance.prepare("UPDATE groups SET topMsgUsers = '[]' WHERE jid = ?").run(key);
+  }
+
   return {
     ...jsonData,
     group_id: row.group_id ?? jsonData.group_id ?? key,
@@ -234,6 +278,9 @@ function getGroup(jid: string) {
     antiToxic: Number(row.antiToxic ?? jsonData.antiToxic ?? 0),
     antiSpam: Number(row.antiSpam ?? jsonData.antiSpam ?? 0),
     antiStatus: Number(row.antiStatus ?? jsonData.antiStatus ?? 0),
+    onlyAdmin: Number(row.onlyAdmin ?? jsonData.onlyAdmin ?? 0),
+    prefix: row.prefix ?? jsonData.prefix ?? null,
+    self: Number(row.self ?? jsonData.self ?? 0),
     privateMode: Boolean(row.privateMode ?? jsonData.privateMode ?? false),
     adminMode: Boolean(row.adminMode ?? jsonData.adminMode ?? false),
     primaryBot: row.primaryBot ?? jsonData.primaryBot ?? null,
@@ -241,6 +288,7 @@ function getGroup(jid: string) {
     goodbye: Boolean(row.goodbye ?? jsonData.goodbye ?? false),
     welcomeMessage: row.welcomeMessage ?? jsonData.welcomeMessage ?? null,
     goodbyeMessage: row.goodbyeMessage ?? jsonData.goodbyeMessage ?? null,
+    topMsgUsers: hasPreviousWeek ? [] : storedTopMsgUsers,
     data: jsonData,
   };
 }
@@ -258,6 +306,8 @@ function getBot(jid: string) {
       groups: [],
       isMain: 0,
       status: "offline",
+      modPrefix: null,
+      modSelf: 0,
       data: {},
     };
 
@@ -270,6 +320,8 @@ function getBot(jid: string) {
       JSON.stringify(defaultBot.groups),
       defaultBot.isMain,
       defaultBot.status,
+      defaultBot.modPrefix,
+      defaultBot.modSelf,
       JSON.stringify(defaultBot.data),
     );
 
@@ -286,6 +338,8 @@ function getBot(jid: string) {
     groups: safeJsonArray(row.groups ?? jsonData.groups),
     isMain: Number(row.isMain ?? jsonData.isMain ?? 0),
     status: row.status ?? jsonData.status ?? "offline",
+    modPrefix: row.modPrefix ?? jsonData.modPrefix ?? null,
+    modSelf: Number(row.modSelf ?? jsonData.modSelf ?? 0),
     data: jsonData,
   };
 }
@@ -374,6 +428,10 @@ export const db = {
         Number(Boolean(merged.antiToxic ?? 0)),
         Number(Boolean(merged.antiSpam ?? 0)),
         Number(Boolean(merged.antiStatus ?? 0)),
+        Number(Boolean(merged.onlyAdmin ?? 0)),
+        merged.prefix ?? null,
+        Number(Boolean(merged.self ?? 0)),
+        JSON.stringify(Array.isArray(merged.topMsgUsers) ? merged.topMsgUsers : []),
         JSON.stringify(payload),
       );
       return;
@@ -387,6 +445,10 @@ export const db = {
       Number(Boolean(merged.antiToxic ?? row.antiToxic ?? 0)),
       Number(Boolean(merged.antiSpam ?? row.antiSpam ?? 0)),
       Number(Boolean(merged.antiStatus ?? row.antiStatus ?? 0)),
+      Number(Boolean(merged.onlyAdmin ?? row.onlyAdmin ?? 0)),
+      merged.prefix !== undefined ? merged.prefix : (row.prefix ?? null),
+      Number(Boolean(merged.self ?? row.self ?? 0)),
+      JSON.stringify(Array.isArray(merged.topMsgUsers) ? merged.topMsgUsers : safeJson<Record<string, any>[]>(row.topMsgUsers)),
       JSON.stringify(payload),
       key,
     );
@@ -414,6 +476,8 @@ export const db = {
         JSON.stringify(Array.isArray(merged.groups) ? merged.groups : []),
         Number(Boolean(merged.isMain ?? 0)),
         merged.status ?? "offline",
+        merged.modPrefix ?? null,
+        Number(Boolean(merged.modSelf ?? 0)),
         JSON.stringify(payload),
       );
       return;
@@ -427,6 +491,8 @@ export const db = {
       JSON.stringify(Array.isArray(merged.groups) ? merged.groups : safeJsonArray(row.groups)),
       Number(Boolean(merged.isMain ?? row.isMain ?? 0)),
       merged.status ?? row.status ?? "offline",
+      merged.modPrefix !== undefined ? merged.modPrefix : (row.modPrefix ?? null),
+      Number(Boolean(merged.modSelf ?? row.modSelf ?? 0)),
       JSON.stringify(payload),
       key,
     );
@@ -508,6 +574,8 @@ export const db = {
         groups: safeJsonArray(row.groups ?? jsonData.groups),
         isMain: Number(row.isMain ?? jsonData.isMain ?? 0),
         status: row.status ?? jsonData.status ?? "offline",
+        modPrefix: row.modPrefix ?? jsonData.modPrefix ?? null,
+        modSelf: Number(row.modSelf ?? jsonData.modSelf ?? 0),
       };
     });
   },

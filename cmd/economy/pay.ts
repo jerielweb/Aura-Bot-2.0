@@ -6,7 +6,7 @@ export default {
   description: "Transfiere monedas a otro usuario del grupo.",
   groupOnly: true,
   async run(ctx: any) {
-    const target = economyTarget(ctx);
+    const target = await economyTarget(ctx);
     const amount = amountArg(ctx.args?.[0]);
     const sender = economyUser(ctx);
     if (target === ctx.sender) return ctx.reply("❌ No puedes transferirte dinero a ti mismo.");

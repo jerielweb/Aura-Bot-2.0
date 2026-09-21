@@ -4,6 +4,16 @@ import { jidNormalizedUser } from "@whiskeysockets/baileys";
 import { cmdLog } from "./core/logger.ts";
 import { NOT_CMD_FOUND, ERROR_CMD, NOT_BOT_ADMIN, NOT_BOT_USER, NOT_PRIVATE, NOT_OWNER, NOT_GROUP, NOT_ADMIN, NOT_MOD, NOT_PREMIUM } from "./core/socketText.ts";
 import {db} from "./dbController/db.ts";
+import { handleGroupStatus, handleGroupToxic } from "./core/groupModeration.ts";
+
+function getMessageWeek(date = new Date()): string {
+  const current = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = current.getUTCDay() || 7;
+  current.setUTCDate(current.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(current.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((current.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return `${current.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+}
 
 export type ContactMetadata = {
   user?: string | null;
@@ -252,6 +262,7 @@ export async function handleMessage(
     if (from === "status@broadcast") return;
 
     const isGroup = from.endsWith("@g.us");
+    if (isGroup && await handleGroupStatus(sock, msg, runtimeDb)) return;
     const participantRaw = isGroup ? msg.key?.participant || msg.participant || "" : "";
     const participantReal = isGroup ? msg.key?.participantAlt || "" : "";
 
@@ -280,6 +291,8 @@ export async function handleMessage(
     let sender = cleanJid(senderJid);
     const senderLid = cleanJid(senderLidJid);
     const botJid = cleanJid(sock.user?.id || "");
+    const botRecord = runtimeDb.getBot?.(botJid) ?? {};
+    const modPrefix = String(botRecord.modPrefix ?? "").trim();
 
     const body =
       msg.message?.conversation ||
@@ -328,8 +341,16 @@ export async function handleMessage(
       ? "Mension De Estado"
       : "Otro";
 
-    const usedPrefix = prefixes.find((p: string) => body.startsWith(p)) ?? null;
+    const groupPrefix = isGroup ? runtimeDb.getGroup(from)?.prefix : null;
+    const activePrefixes = groupPrefix
+      ? [groupPrefix]
+      : modPrefix
+        ? [modPrefix]
+        : [...new Set(prefixes.filter(Boolean))]
+          .sort((left, right) => right.length - left.length);
+    const usedPrefix = activePrefixes.find((p: string) => body.startsWith(p)) ?? null;
     const isCmd = !!usedPrefix;
+    const isModPrefixCommand = Boolean(!groupPrefix && modPrefix && usedPrefix === modPrefix);
 
     if (msg.key?.fromMe && !isCmd) return;
 
@@ -365,7 +386,9 @@ export async function handleMessage(
       if (primaryBot && cmdName !== "delprimary" && cmdName !== "setprimary") {
         const storedBot = runtimeDb.getBot?.(botJid);
         const botId = sock.subBotId || storedBot?.bot_id || null;
-        if (!botIdentityMatches(primaryBot, botJid, botId)) return;
+        const isPrimary = botIdentityMatches(primaryBot, botJid, botId);
+        if (!isPrimary) return;
+        if (storedBot?.status !== "active") return;
       }
     }
 
@@ -395,8 +418,41 @@ export async function handleMessage(
 
       if (contactChanged) runtimeDb.setUser?.(sender, nextContact);
     }
+
+    if (isGroup && !msg.key?.fromMe && sender) {
+      const groupData = runtimeDb.getGroup(from);
+      const currentWeek = getMessageWeek();
+      const storedTopMsgUsers = Array.isArray(groupData.topMsgUsers) ? groupData.topMsgUsers : [];
+      const topMsgUsers = storedTopMsgUsers.length > 0 && storedTopMsgUsers.some((user: any) => user.week !== currentWeek)
+        ? []
+        : storedTopMsgUsers;
+      const currentLid = senderLid || rawSenderLid || null;
+      const currentPushName = msg.pushName || runtimeDb.getUser?.(sender)?.pushName || "Usuario";
+      const entry = topMsgUsers.find((user: any) =>
+        (user.jid && user.jid === sender) ||
+        (currentLid && user.lid && user.lid === currentLid),
+      );
+
+      if (entry) {
+        entry.jid = sender;
+        entry.lid = currentLid || entry.lid || null;
+        entry.pushName = currentPushName;
+        entry.week = currentWeek;
+        entry.count = Number(entry.count || 0) + 1;
+      } else {
+        topMsgUsers.push({
+          jid: sender,
+          lid: currentLid,
+          pushName: currentPushName,
+          week: currentWeek,
+          count: 1,
+        });
+      }
+
+      runtimeDb.setGroup(from, { topMsgUsers });
+    }
     const botUserJid = cleanJid(sock.user?.id || "");
-    const storedBot = runtimeDb.getBot?.(botUserJid) ?? {};
+    const storedBot = runtimeDb.getBot?.(botUserJid) ?? botRecord;
     const botIdentities = [
       botUserJid,
       sock.subBotId,
@@ -431,6 +487,8 @@ export async function handleMessage(
     const isCoOwner = configuredCoOwner || runtimeDb.hasRole(sender, "coowner");
     const isMod = isOwner || isCoOwner || runtimeDb.hasRole(sender, "mod");
     const isPremium = isMod || runtimeDb.hasRole(senderNum, "premium");
+
+    if (isModPrefixCommand && !isMod && !isBotUser) return;
 
 
     let isAdmin = false;
@@ -473,11 +531,21 @@ export async function handleMessage(
     if (isGroup) {
       const groupData = runtimeDb.getGroup(from);
 
+      const isUnbanCommand = ["unbanchat", "desbanearchat", "unmutechat"].includes(cmdName);
+      if (groupData?.chatBanned && !isUnbanCommand) return;
+      if (groupData?.botOn === 0 && cmdName !== "bot") return;
+
+      if (groupData?.self && !isBotUser && !isMod) return;
+
       if (groupData?.privateMode && !isOwner && !isCoOwner) {
         return;
       }
 
       if (groupData?.adminMode && !isAdmin && !isMod) {
+        return;
+      }
+
+      if (groupData?.onlyAdmin && isCmd && !isAdmin && !isMod && !isBotUser) {
         return;
       }
 
@@ -512,7 +580,10 @@ export async function handleMessage(
 
     logger.message?.(logPayload);
 
-    if (!isCmd) return;
+    if (!isCmd) {
+      if (isGroup && await handleGroupToxic(sock, msg, body, runtimeDb, isAdmin, isBotAdmin)) return;
+      return;
+    }
 
     const resolvePlugins = runtimeOptions.getPlugins ?? (() => plugins);
     const pluginMap = resolvePlugins();
@@ -540,6 +611,7 @@ export async function handleMessage(
       args,
       text,
       usedPrefix,
+      modPrefix,
       isOwner,
       isCoOwner,
       isMod,

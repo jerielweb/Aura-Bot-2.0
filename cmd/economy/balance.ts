@@ -5,7 +5,7 @@ export default {
   category: "economy",
   description: "Muestra tu saldo actual o el de otro usuario.",
   async run(ctx: any) {
-    const target = economyTarget(ctx);
+    const target = await economyTarget(ctx);
     const user = economyUser(ctx, target);
     const total = Number(user.bolsillo) + Number(user.banco);
     let text = `╭〔 💰 𝐄𝐂𝐎𝐍𝐎𝐌𝐈́𝐀 〕⬣\n`;

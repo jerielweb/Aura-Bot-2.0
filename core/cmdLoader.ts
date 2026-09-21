@@ -67,6 +67,7 @@ async function loadPlugin(filePath: string) {
     const url = `${pathToFileURL(filePath).href}?t=${Date.now()}`;
     const mod = await import(url);
     const plugin = normalizePlugin(mod.default);
+    if (!plugin) return;
 
     for (const [key, value] of plugins.entries()) {
       if (value === plugin) {

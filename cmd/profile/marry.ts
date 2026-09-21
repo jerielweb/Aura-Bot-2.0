@@ -1,4 +1,4 @@
-import { profileTarget, getProfile, updateProfile } from "../../core/profileConfig.ts";
+import { profileTarget, getProfile, setPendingProfileAction } from "../../core/profileConfig.ts";
 
 export default {
   name: ["marry", "casarse", "matrimonio"],
@@ -8,10 +8,9 @@ export default {
     const target = await profileTarget(ctx);
     if (target === ctx.sender) return ctx.reply("❌ Debes mencionar a otra persona.");
     if (getProfile(ctx.sender).marriedTo || getProfile(target).marriedTo) return ctx.reply("❌ Uno de los dos ya tiene pareja.");
-    updateProfile(ctx.sender, { marriedTo: target });
-    updateProfile(target, { marriedTo: ctx.sender });
+    setPendingProfileAction({ kind: "marry", from: ctx.sender, to: target });
     return ctx.reply({
-      text: `💍 Ahora están casados: @${ctx.sender.split("@")[0]} y @${target.split("@")[0]}`,
+      text: `💍 @${ctx.sender.split("@")[0]} te propone matrimonio. Responde con *${ctx.usedPrefix ?? "."}accept* para aceptar o *${ctx.usedPrefix ?? "."}reject* para rechazar.`,
       mentions: [ctx.sender, target],
     });
   },

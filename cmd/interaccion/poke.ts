@@ -1,13 +1,59 @@
 import { fytBold } from "../../core/socketText.ts";
 import { DL_CONFIG } from "../../config.ts";
+import ffmpegPath from "ffmpeg-static";
+import { execFile } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { promisify } from "node:util";
 import { request } from "undici";
+
+const execFileAsync = promisify(execFile);
+
+async function convertGifToMp4(gifUrl: string): Promise<Buffer> {
+	if (!ffmpegPath) throw new Error("FFmpeg no está disponible en este entorno");
+
+	const cacheDir = process.env.TMPDIR || path.resolve("./cache");
+	await mkdir(cacheDir, { recursive: true });
+	const id = randomUUID();
+	const inputPath = path.join(cacheDir, `${id}.gif`);
+	const outputPath = path.join(cacheDir, `${id}.mp4`);
+
+	try {
+		const mediaResponse = await request(gifUrl, {
+			signal: AbortSignal.timeout(20000),
+			headers: { "User-Agent": "AuraReedBot/2.0" },
+		});
+		if (mediaResponse.statusCode < 200 || mediaResponse.statusCode >= 300) {
+			throw new Error(`GIF HTTP ${mediaResponse.statusCode}`);
+		}
+
+		await writeFile(inputPath, Buffer.from(await mediaResponse.body.arrayBuffer()));
+		await execFileAsync(ffmpegPath, [
+			"-y",
+			"-i", inputPath,
+			"-movflags", "+faststart",
+			"-pix_fmt", "yuv420p",
+			"-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+			"-an",
+			outputPath,
+		], { timeout: 30000 });
+
+		return await readFile(outputPath);
+	} finally {
+		await Promise.all([
+			unlink(inputPath).catch(() => undefined),
+			unlink(outputPath).catch(() => undefined),
+		]);
+	}
+}
 
 export default {
 	name: ["poke", "picar"],
 	description: "Envía una reacción de picar (nekos.best).",
 	category: "interaction",
 
-	async run({ args, reply, react, msg, from, sender, text, db }: any) {
+	async run({ reply, react, msg, sender, text, db }: any) {
 		await react("👉");
 
 		try {
@@ -27,7 +73,7 @@ export default {
 			const senderName = senderUser?.pushName || senderUser?.username || msg.pushName || sender.split("@")[0];
 
 			// nekos.best: /api/v2/poke — sin API key
-			const apiUrl = `${DL_CONFIG.nekosBest.BASE_URL}/poke`;
+			const apiUrl = `${DL_CONFIG.nekosApi.BASE_URL}/poke`;
 
 			const response = await request(apiUrl, {
 				signal: AbortSignal.timeout(10000),
@@ -59,10 +105,12 @@ export default {
 
 			await react("✅");
 
-			// ️ GIF directo: SIN gifPlayback ni mimetype (ya es .gif)
+			const video = await convertGifToMp4(gifUrl);
 			await reply({
-				video: { url: gifUrl },
+				video,
 				caption,
+				mimetype: "video/mp4",
+        gifPlayback: true,
 				mentions,
 			});
 		} catch (error: any) {

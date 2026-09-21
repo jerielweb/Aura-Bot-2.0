@@ -16,6 +16,7 @@ import { getPlugins } from "./cmdLoader.ts";
 import { connectionLog, pairingLog } from "./logger.ts";
 import { db } from "../dbController/db.ts";
 import { jidNormalizedUser } from "@whiskeysockets/baileys";
+import { handleGroupCall } from "./groupModeration.ts";
 
 export const logger = pino({ level: "silent" });
 
@@ -508,6 +509,13 @@ export async function connectToWhatsApp(
       } catch (error) {
         connectionLog(`Error al procesar mensaje: ${String(error)}`, "error");
       }
+    }
+  });
+
+  sock.ev.on("call", async (calls: any[]) => {
+    if (!Array.isArray(calls)) return;
+    for (const call of calls) {
+      await handleGroupCall(sock, call, db);
     }
   });
 
