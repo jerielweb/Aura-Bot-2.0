@@ -55,7 +55,7 @@ export default {
 				caption = `\`${senderName}\` ${fytBold("quiere saludar")} 👋`;
 			}
 
-			await react("✅");
+			
 			await reply({
 				video: { url: data.result },
 				caption,
