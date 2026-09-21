@@ -1,4 +1,4 @@
-import {fytBold} from "../../core/socketText.ts";
+import { fytBold } from "../../core/socketText.ts";
 export default {
   name: ["ping", "p", "pong", "lat"],
   description: "Velocidad del sistema.",
@@ -16,7 +16,11 @@ export default {
     textPing += "\n┃ 💻 Comprobando servidor";
     textPing += "\n╰━━━━━━━━━━━━━━━━⬣";
 
-    const sent = await sock.sendMessage(from, { text: textPing }, { quoted: msg });
+    const sent = await sock.sendMessage(
+      from,
+      { text: textPing },
+      { quoted: msg },
+    );
 
     const latency = Date.now() - start;
     let status = "";
@@ -41,10 +45,14 @@ export default {
     textPing2 += "╰━━━━━━━━━━━━━━━━⬣";
 
     try {
-      await sock.sendMessage(from, {
-        text: textPing2,
-        edit: sent.key,
-      }, { quoted: msg });
+      await sock.sendMessage(
+        from,
+        {
+          text: textPing2,
+          edit: sent.key,
+        },
+        { quoted: msg },
+      );
     } catch {
       await sock.sendMessage(from, { text: textPing2 }, { quoted: msg });
     }

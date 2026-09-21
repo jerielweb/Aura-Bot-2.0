@@ -1,4 +1,9 @@
-import { addEconomyXp, economyUser, formatCoins, saveEconomy } from "./economyRuntime.ts";
+import {
+  addEconomyXp,
+  economyUser,
+  formatCoins,
+  saveEconomy,
+} from "./economyRuntime.ts";
 import { cooldownText } from "./economyConfig.ts";
 import { economyTexts } from "./economyTexts.ts";
 
@@ -14,7 +19,8 @@ type ActivityOptions = {
   fail: string[];
 };
 
-const randomBetween = ([min, max]: [number, number]) => Math.floor(Math.random() * (max - min + 1)) + min;
+const randomBetween = ([min, max]: [number, number]) =>
+  Math.floor(Math.random() * (max - min + 1)) + min;
 
 export function createEconomyActivity(options: ActivityOptions) {
   const key = options.names[0];
@@ -28,7 +34,9 @@ export function createEconomyActivity(options: ActivityOptions) {
       const now = Date.now();
       const last = Number(user[lastKey] ?? 0);
       if (last && now - last < options.cooldown) {
-        return ctx.reply(`⏳ Estás cansado. Vuelve en *${cooldownText(options.cooldown - (now - last))}*.`);
+        return ctx.reply(
+          `⏳ Estás cansado. Vuelve en *${cooldownText(options.cooldown - (now - last))}*.`,
+        );
       }
 
       const xp = randomBetween(options.xp);
@@ -44,7 +52,9 @@ export function createEconomyActivity(options: ActivityOptions) {
         ? configuredTexts
         : configuredTexts?.success;
       const failTexts = configuredTexts?.fail;
-      const successMessage = successTexts?.length ? successTexts : options.success;
+      const successMessage = successTexts?.length
+        ? successTexts
+        : options.success;
       const failMessage = failTexts?.length ? failTexts : options.fail;
 
       let text = `╭〔 ${options.icon} 𝐀𝐔𝐑𝐀 𝐑𝐄𝐄𝐃 〕⬣\n┃ ${options.title}\n╰━━━━━━━━━━━━⬣\n\n`;

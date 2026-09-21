@@ -46,7 +46,12 @@ function registerReconnectAttempt(sessionName: string) {
   return attempts;
 }
 
-function scheduleReconnect(delayMs: number, sessionName: string, isSubBot: boolean, options: ConnectionOptions = {}) {
+function scheduleReconnect(
+  delayMs: number,
+  sessionName: string,
+  isSubBot: boolean,
+  options: ConnectionOptions = {},
+) {
   const currentTimer = reconnectTimers.get(sessionName);
   if (currentTimer) {
     clearTimeout(currentTimer);
@@ -74,12 +79,16 @@ function askQuestion(query: string): Promise<string> {
 }
 
 function cleanPhoneNumber(jid: string): string | null {
-  const local = String(jid || "").split("@")[0].split(":")[0];
+  const local = String(jid || "")
+    .split("@")[0]
+    .split(":")[0];
   return /^\d+$/.test(local) ? local : null;
 }
 
 function cleanLid(lid: string): string | null {
-  const local = String(lid || "").replace(/@lid$/, "").split(":")[0];
+  const local = String(lid || "")
+    .replace(/@lid$/, "")
+    .split(":")[0];
   return /^\d+$/.test(local) ? local : null;
 }
 
@@ -92,7 +101,10 @@ function normalizePairingPhone(value: string): string {
   return String(value || "").replace(/\D/g, "");
 }
 
-function getBotDisplayName(sock: any, previousName?: string | null): string | null {
+function getBotDisplayName(
+  sock: any,
+  previousName?: string | null,
+): string | null {
   const user = sock.user || {};
   const name = user.name || user.notify || user.pushName || previousName;
   return name ? String(name).trim() : null;
@@ -101,7 +113,9 @@ function getBotDisplayName(sock: any, previousName?: string | null): string | nu
 async function getBotGroups(sock: any): Promise<string[]> {
   try {
     const participating = await sock.groupFetchAllParticipating?.();
-    return Object.keys(participating || {}).filter((jid) => jid.endsWith("@g.us"));
+    return Object.keys(participating || {}).filter((jid) =>
+      jid.endsWith("@g.us"),
+    );
   } catch {
     return [];
   }
@@ -140,14 +154,20 @@ export async function connectToWhatsApp(
   const { state, saveCreds, close: closeAuthState } = authState;
   connectionsInProgress.delete(sessionName);
 
-  const isRegistered = Boolean(state.creds && (state.creds.registered || state.creds.me));
+  const isRegistered = Boolean(
+    state.creds && (state.creds.registered || state.creds.me),
+  );
 
   if (isSubBot && !isRegistered && options.allowPairing === false) {
     const authBase = globalThis.subBotSession ?? "./sessions/subs";
     const authFolder = path.join(authBase, sessionName);
-    if (fs.existsSync(authFolder)) fs.rmSync(authFolder, { recursive: true, force: true });
+    if (fs.existsSync(authFolder))
+      fs.rmSync(authFolder, { recursive: true, force: true });
     connectionsInProgress.delete(sessionName);
-    connectionLog("Sesión de subbot sin credenciales; reconexión detenida sin activar QR.", "alert");
+    connectionLog(
+      "Sesión de subbot sin credenciales; reconexión detenida sin activar QR.",
+      "alert",
+    );
     return null;
   }
 
@@ -161,7 +181,9 @@ export async function connectToWhatsApp(
     if (option === "2") {
       pairingMethod = "code";
       pairingLog("Ingrese el número de teléfono con código de país");
-      pairingPhone = normalizePairingPhone(await askQuestion("Ej: 50612345678: "));
+      pairingPhone = normalizePairingPhone(
+        await askQuestion("Ej: 50612345678: "),
+      );
 
       if (!pairingPhone) {
         pairingMethod = "qr";
@@ -179,7 +201,10 @@ export async function connectToWhatsApp(
     const fetched = await fetchLatestWaWebVersion();
     version = fetched.version as [number, number, number];
   } catch {
-    connectionLog("No se pudo obtener la versión de WhatsApp Web; usando la interna de Baileys.", "warn");
+    connectionLog(
+      "No se pudo obtener la versión de WhatsApp Web; usando la interna de Baileys.",
+      "warn",
+    );
   }
 
   const sock = makeWASocket({
@@ -236,7 +261,8 @@ export async function connectToWhatsApp(
         ? (globalThis.subBotSession ?? "./sessions/subs")
         : (globalThis.mainBotSession ?? "./sessions");
       const authFolder = path.join(authBase, sessionName);
-      if (fs.existsSync(authFolder)) fs.rmSync(authFolder, { recursive: true, force: true });
+      if (fs.existsSync(authFolder))
+        fs.rmSync(authFolder, { recursive: true, force: true });
 
       await options.onPairingExpired?.();
     }, options.pairingTimeoutMs ?? 60_000);
@@ -245,18 +271,26 @@ export async function connectToWhatsApp(
   if (pairingMethod === "code" && !isRegistered) {
     void (async () => {
       try {
-        pairingLog("Esperando estabilización del socket para generar el código");
+        pairingLog(
+          "Esperando estabilización del socket para generar el código",
+        );
         await sock.waitForSocketOpen();
         await new Promise((resolve) => setTimeout(resolve, 3000));
 
         if (!pairingPhone) {
-          connectionLog("Falta el número telefónico para la solicitud de emparejamiento.", "warn");
+          connectionLog(
+            "Falta el número telefónico para la solicitud de emparejamiento.",
+            "warn",
+          );
           return;
         }
 
         pairingLog(`Solicitando código para: ${pairingPhone}`);
-        const rawCode = String(await sock.requestPairingCode(pairingPhone) || "").replace(/[^a-zA-Z0-9]/g, "");
-        if (!rawCode) throw new Error("WhatsApp no devolvió un código de vinculación.");
+        const rawCode = String(
+          (await sock.requestPairingCode(pairingPhone)) || "",
+        ).replace(/[^a-zA-Z0-9]/g, "");
+        if (!rawCode)
+          throw new Error("WhatsApp no devolvió un código de vinculación.");
         const code = rawCode.match(/.{1,4}/g)?.join("-") || rawCode;
 
         await options.onPairingCode?.(code);
@@ -271,8 +305,12 @@ export async function connectToWhatsApp(
             "╰──────────────────────────────────────────╯\n",
         );
       } catch (err) {
-        const pairingError = err instanceof Error ? err : new Error(String(err));
-        connectionLog(`Error al solicitar el código de emparejamiento: ${pairingError.message}`, "error");
+        const pairingError =
+          err instanceof Error ? err : new Error(String(err));
+        connectionLog(
+          `Error al solicitar el código de emparejamiento: ${pairingError.message}`,
+          "error",
+        );
         await options.onPairingError?.(pairingError);
       }
     })();
@@ -280,7 +318,10 @@ export async function connectToWhatsApp(
 
   sock.ev.on("connection.update", async (u) => {
     if (u.qr && pairingMethod === "qr") {
-      connectionLog("Escanea este código QR con WhatsApp para vincular al bot.", "alert");
+      connectionLog(
+        "Escanea este código QR con WhatsApp para vincular al bot.",
+        "alert",
+      );
       qrcodeTerminal.generate(u.qr, { small: true });
       await options.onQr?.(u.qr);
     }
@@ -293,7 +334,10 @@ export async function connectToWhatsApp(
       let botId = String((sock.user as any)?.lid || "").trim();
       if (!botId) {
         try {
-          botId = String(await sock.signalRepository?.lidMapping?.getLIDForPN(botJid) || "").trim();
+          botId = String(
+            (await sock.signalRepository?.lidMapping?.getLIDForPN(botJid)) ||
+              "",
+          ).trim();
         } catch {
           botId = "";
         }
@@ -324,7 +368,10 @@ export async function connectToWhatsApp(
       });
       if (sessionName !== botJid) db.deleteBot(sessionName);
       resetReconnectAttempts(sessionName);
-      connectionLog(`WhatsApp conectado correctamente. JID: ${mainNum}`, "alert");
+      connectionLog(
+        `WhatsApp conectado correctamente. JID: ${mainNum}`,
+        "alert",
+      );
       return;
     }
 
@@ -347,14 +394,23 @@ export async function connectToWhatsApp(
         ? (globalThis.subBotSession ?? "./sessions/subs")
         : (globalThis.mainBotSession ?? "./sessions");
       const authFolder = path.join(authBase, sessionName);
-      if (fs.existsSync(authFolder)) fs.rmSync(authFolder, { recursive: true, force: true });
-      const logoutBotJid = sock.user?.id ? jidNormalizedUser(sock.user.id) : sessionName;
+      if (fs.existsSync(authFolder))
+        fs.rmSync(authFolder, { recursive: true, force: true });
+      const logoutBotJid = sock.user?.id
+        ? jidNormalizedUser(sock.user.id)
+        : sessionName;
       db.setBot(logoutBotJid, { status: "offline" });
-      connectionLog("Sesión cerrada por comando del bot. No se reconectará automáticamente.", "alert");
+      connectionLog(
+        "Sesión cerrada por comando del bot. No se reconectará automáticamente.",
+        "alert",
+      );
 
       if (!isSubBot) {
         globalThis.mainSocket = null;
-        connectionLog("Iniciando nuevamente el menú de vinculación del bot principal...", "alert");
+        connectionLog(
+          "Iniciando nuevamente el menú de vinculación del bot principal...",
+          "alert",
+        );
         void connectToWhatsApp(sessionName, false);
       }
       return;
@@ -363,7 +419,10 @@ export async function connectToWhatsApp(
     try {
       (sock.ev as any).removeAllListeners();
     } catch (error) {
-      connectionLog(`Error al remover oyentes del socket: ${String(error)}`, "error");
+      connectionLog(
+        `Error al remover oyentes del socket: ${String(error)}`,
+        "error",
+      );
     }
 
     const error = u.lastDisconnect?.error as any;
@@ -381,12 +440,19 @@ export async function connectToWhatsApp(
       connectionLog(`Error al cerrar sesión: ${String(closeError)}`, "error");
     }
 
-    connectionLog(`Conexión cerrada. Código: ${String(statusCode || "N/A")}. Motivo: ${errorMessage}`, statusCode === 0 ? "warn" : "error");
+    connectionLog(
+      `Conexión cerrada. Código: ${String(statusCode || "N/A")}. Motivo: ${errorMessage}`,
+      statusCode === 0 ? "warn" : "error",
+    );
 
-    const currentIsRegistered = Boolean(state.creds && (state.creds.registered || state.creds.me));
+    const currentIsRegistered = Boolean(
+      state.creds && (state.creds.registered || state.creds.me),
+    );
     const isNotRegistered = !currentIsRegistered;
 
-    const disconnectedBotJid = sock.user?.id ? jidNormalizedUser(sock.user.id) : "";
+    const disconnectedBotJid = sock.user?.id
+      ? jidNormalizedUser(sock.user.id)
+      : "";
     if (disconnectedBotJid && !isNotRegistered) {
       db.setBot(disconnectedBotJid, { status: "offline" });
     }
@@ -399,13 +465,19 @@ export async function connectToWhatsApp(
         try {
           fs.rmSync(authFolder, { recursive: true, force: true });
         } catch (cleanupError) {
-          connectionLog(`Error al limpiar la vinculación del subbot: ${String(cleanupError)}`, "error");
+          connectionLog(
+            `Error al limpiar la vinculación del subbot: ${String(cleanupError)}`,
+            "error",
+          );
         }
       }
 
       db.deleteBot(sessionName);
       await options.onPairingExpired?.();
-      connectionLog("Vinculación del subbot detenida definitivamente; no se solicitará un QR de respaldo.", "alert");
+      connectionLog(
+        "Vinculación del subbot detenida definitivamente; no se solicitará un QR de respaldo.",
+        "alert",
+      );
       return;
     }
 
@@ -417,31 +489,45 @@ export async function connectToWhatsApp(
       DisconnectReason.connectionReplaced,
     ];
 
-    const shouldResetSession = [
-      DisconnectReason.loggedOut,
-      DisconnectReason.badSession,
-      DisconnectReason.forbidden,
-      DisconnectReason.multideviceMismatch,
-    ].includes(statusCode) || isNotRegistered;
+    const shouldResetSession =
+      [
+        DisconnectReason.loggedOut,
+        DisconnectReason.badSession,
+        DisconnectReason.forbidden,
+        DisconnectReason.multideviceMismatch,
+      ].includes(statusCode) || isNotRegistered;
 
-    const isTransientDisconnect = transientDisconnectCodes.includes(statusCode) && !isNotRegistered;
+    const isTransientDisconnect =
+      transientDisconnectCodes.includes(statusCode) && !isNotRegistered;
 
     if (isTransientDisconnect) {
       const retryCount = registerReconnectAttempt(sessionName);
       const delayMs = Math.min(5000 * retryCount, 20000);
-      connectionLog(`Desconexión temporal detectada. Reintentando sin borrar la sesión actual...`, "warn");
+      connectionLog(
+        `Desconexión temporal detectada. Reintentando sin borrar la sesión actual...`,
+        "warn",
+      );
       scheduleReconnect(delayMs, sessionName, isSubBot, options);
       return;
     }
 
     if (shouldResetSession) {
       if (isNotRegistered) {
-        connectionLog("La vinculación fue interrumpida, expiró o la IP está bloqueada.", "alert");
+        connectionLog(
+          "La vinculación fue interrumpida, expiró o la IP está bloqueada.",
+          "alert",
+        );
       } else {
-        connectionLog("La sesión no es válida o fue desvinculada por WhatsApp.", "alert");
+        connectionLog(
+          "La sesión no es válida o fue desvinculada por WhatsApp.",
+          "alert",
+        );
       }
 
-      connectionLog("Limpiando credenciales y reiniciando el proceso de vinculación...", "warn");
+      connectionLog(
+        "Limpiando credenciales y reiniciando el proceso de vinculación...",
+        "warn",
+      );
       const authBase = isSubBot
         ? (globalThis.subBotSession ?? "./sessions/subs")
         : (globalThis.mainBotSession ?? "./sessions");
@@ -450,18 +536,27 @@ export async function connectToWhatsApp(
         try {
           fs.rmSync(authFolder, { recursive: true, force: true });
         } catch (error) {
-          connectionLog(`Error al limpiar credenciales: ${String(error)}`, "error");
+          connectionLog(
+            `Error al limpiar credenciales: ${String(error)}`,
+            "error",
+          );
         }
       }
 
-      connectionLog("Iniciando nuevo proceso de vinculación en 3 segundos...", "warn");
+      connectionLog(
+        "Iniciando nuevo proceso de vinculación en 3 segundos...",
+        "warn",
+      );
       scheduleReconnect(3000, sessionName, isSubBot, options);
       return;
     }
 
     const retryCount = registerReconnectAttempt(sessionName);
     if (retryCount >= MAX_MAIN_RECONNECT_ATTEMPTS) {
-      connectionLog(`Se alcanzó el máximo de reintentos. Reiniciando emparejamiento...`, "alert");
+      connectionLog(
+        `Se alcanzó el máximo de reintentos. Reiniciando emparejamiento...`,
+        "alert",
+      );
       const authBase = isSubBot
         ? (globalThis.subBotSession ?? "./sessions/subs")
         : (globalThis.mainBotSession ?? "./sessions");
@@ -470,7 +565,10 @@ export async function connectToWhatsApp(
         try {
           fs.rmSync(authFolder, { recursive: true, force: true });
         } catch (error) {
-          connectionLog(`Error al limpiar la sesión principal: ${String(error)}`, "error");
+          connectionLog(
+            `Error al limpiar la sesión principal: ${String(error)}`,
+            "error",
+          );
         }
       }
 
@@ -478,7 +576,10 @@ export async function connectToWhatsApp(
       return;
     }
 
-    connectionLog(`Conexión interrumpida. Reconectando en 5 segundos... intento ${retryCount}/${MAX_MAIN_RECONNECT_ATTEMPTS}`, "warn");
+    connectionLog(
+      `Conexión interrumpida. Reconectando en 5 segundos... intento ${retryCount}/${MAX_MAIN_RECONNECT_ATTEMPTS}`,
+      "warn",
+    );
     scheduleReconnect(5000, sessionName, isSubBot, options);
   });
 
@@ -493,19 +594,26 @@ export async function connectToWhatsApp(
           const connectedBot = sock.user?.id || "";
           if (connectedBot) db.addBotGroup(connectedBot, msg.key.remoteJid);
         }
-        await handleMessage(sock, msg, isSubBot ? "SUB" : "MAIN", sock.user?.id ?? null, [], {
-          db,
-          config: {
-            prefix: globalThis.DEFAULT_PREFIXES ?? ["."],
+        await handleMessage(
+          sock,
+          msg,
+          isSubBot ? "SUB" : "MAIN",
+          sock.user?.id ?? null,
+          [],
+          {
+            db,
+            config: {
+              prefix: globalThis.DEFAULT_PREFIXES ?? ["."],
+            },
+            getPlugins: () => getPlugins(),
+            logger: {
+              message: () => {},
+              warn: (payload: any) => connectionLog(String(payload), "warn"),
+              error: (payload: any) => connectionLog(String(payload), "error"),
+              cmdExec: () => {},
+            },
           },
-          getPlugins: () => getPlugins(),
-          logger: {
-            message: () => {},
-            warn: (payload: any) => connectionLog(String(payload), "warn"),
-            error: (payload: any) => connectionLog(String(payload), "error"),
-            cmdExec: () => {},
-          },
-        });
+        );
       } catch (error) {
         connectionLog(`Error al procesar mensaje: ${String(error)}`, "error");
       }
@@ -519,40 +627,60 @@ export async function connectToWhatsApp(
     }
   });
 
-  sock.ev.on("group-participants.update", async ({ id, participants, action }) => {
-    if (!id || !Array.isArray(participants) || !["add", "remove"].includes(action)) return;
+  sock.ev.on(
+    "group-participants.update",
+    async ({ id, participants, action }) => {
+      if (
+        !id ||
+        !Array.isArray(participants) ||
+        !["add", "remove"].includes(action)
+      )
+        return;
 
-    try {
-      const metadata = await sock.groupMetadata(id);
-      const group = db.getGroup(id);
-      const groupName = metadata?.subject || group.group_name || id;
+      try {
+        const metadata = await sock.groupMetadata(id);
+        const group = db.getGroup(id);
+        const groupName = metadata?.subject || group.group_name || id;
 
-      if (group.group_name !== groupName) {
-        db.setGroup(id, { group_name: groupName });
+        if (group.group_name !== groupName) {
+          db.setGroup(id, { group_name: groupName });
+        }
+
+        const setting = action === "add" ? "welcome" : "goodbye";
+        if (!group[setting]) return;
+
+        const template =
+          action === "add"
+            ? group.welcomeMessage || "👋 Bienvenido/a a *{group}*, {mention}!"
+            : group.goodbyeMessage ||
+              "👋 Hasta luego, {mention}. Gracias por formar parte de *{group}*.";
+        const participantJids = participants
+          .map((participant: any) =>
+            typeof participant === "string" ? participant : participant?.id,
+          )
+          .filter(Boolean);
+        const mentions = participantJids;
+        const text = mentions
+          .reduce(
+            (message: string, participant: string) =>
+              message +
+              "\n" +
+              template
+                .replaceAll("{group}", groupName)
+                .replaceAll("{mention}", `@${participant.split("@")[0]}`),
+            "",
+          )
+          .trim();
+
+        await sock.sendMessage(id, { text, mentions }, { quoted: undefined });
+      } catch (error) {
+        connectionLog(
+          `Error en evento de participantes del grupo: ${String(error)}`,
+          "error",
+        );
       }
-
-      const setting = action === "add" ? "welcome" : "goodbye";
-      if (!group[setting]) return;
-
-      const template = action === "add"
-        ? group.welcomeMessage || "👋 Bienvenido/a a *{group}*, {mention}!"
-        : group.goodbyeMessage || "👋 Hasta luego, {mention}. Gracias por formar parte de *{group}*.";
-      const participantJids = participants
-        .map((participant: any) => typeof participant === "string" ? participant : participant?.id)
-        .filter(Boolean);
-      const mentions = participantJids;
-      const text = mentions.reduce(
-        (message: string, participant: string) => message + "\n" + template
-          .replaceAll("{group}", groupName)
-          .replaceAll("{mention}", `@${participant.split("@")[0]}`),
-        "",
-      ).trim();
-
-      await sock.sendMessage(id, { text, mentions }, { quoted: undefined });
-    } catch (error) {
-      connectionLog(`Error en evento de participantes del grupo: ${String(error)}`, "error");
-    }
-  });
+    },
+  );
 
   return sock;
 }

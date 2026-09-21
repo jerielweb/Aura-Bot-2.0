@@ -1,4 +1,10 @@
-import { amountArg, economyTarget, economyUser, formatCoins, saveEconomy } from "../../core/economyRuntime.ts";
+import {
+  amountArg,
+  economyTarget,
+  economyUser,
+  formatCoins,
+  saveEconomy,
+} from "../../core/economyRuntime.ts";
 
 export default {
   name: ["transfer", "pagar", "pay"],
@@ -9,9 +15,14 @@ export default {
     const target = await economyTarget(ctx);
     const amount = amountArg(ctx.args?.[0]);
     const sender = economyUser(ctx);
-    if (target === ctx.sender) return ctx.reply("❌ No puedes transferirte dinero a ti mismo.");
-    if (amount <= 0) return ctx.reply("⚠️ Cantidad inválida. Ejemplo: *.pay 100 @usuario*");
-    if (sender.bolsillo < amount) return ctx.reply(`❌ No tienes suficientes monedas. Tienes *₡${formatCoins(sender.bolsillo)}*.`);
+    if (target === ctx.sender)
+      return ctx.reply("❌ No puedes transferirte dinero a ti mismo.");
+    if (amount <= 0)
+      return ctx.reply("⚠️ Cantidad inválida. Ejemplo: *.pay 100 @usuario*");
+    if (sender.bolsillo < amount)
+      return ctx.reply(
+        `❌ No tienes suficientes monedas. Tienes *₡${formatCoins(sender.bolsillo)}*.`,
+      );
     const receiver = economyUser(ctx, target);
     sender.bolsillo -= amount;
     receiver.bolsillo += amount;

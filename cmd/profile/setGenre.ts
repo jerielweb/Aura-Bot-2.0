@@ -1,5 +1,5 @@
 import { updateProfile } from "../../core/profileConfig.ts";
-import {fytBold} from "./../../core/socketText.ts"
+import { fytBold } from "./../../core/socketText.ts";
 export default {
   name: ["setgenre", "genero"],
   description: "Cambia tu género.",

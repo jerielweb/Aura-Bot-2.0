@@ -60,7 +60,13 @@ export const fytBold = (texto) => {
     .join("");
 };
 
-export const NOT_CMD_FOUND = ({ cmdName, prefix = "." }: { cmdName: string; prefix?: string }) => {
+export const NOT_CMD_FOUND = ({
+  cmdName,
+  prefix = ".",
+}: {
+  cmdName: string;
+  prefix?: string;
+}) => {
   return `╭〔 ⚠️ ${fytBold("AURA REED")}〕⬣
 ┃ ❌ ${fytBold("COMANDO NO ENCONTRADO")}
 ╰━━━━━━━━━━━━⬣
@@ -70,7 +76,13 @@ export const NOT_CMD_FOUND = ({ cmdName, prefix = "." }: { cmdName: string; pref
 ┃ > los comandos disponibles.`;
 };
 
-export const ERROR_CMD = ({ cmdName, errorDetails }: { cmdName: string; errorDetails: string }) => {
+export const ERROR_CMD = ({
+  cmdName,
+  errorDetails,
+}: {
+  cmdName: string;
+  errorDetails: string;
+}) => {
   return `╭〔 ⚠️ ${fytBold("AURA REED")}〕⬣
 ┃ ❌ ${fytBold("ERROR EN COMANDO")}
 ╰━━━━━━━━━━━━⬣
@@ -81,7 +93,7 @@ export const ERROR_CMD = ({ cmdName, errorDetails }: { cmdName: string; errorDet
 \`\`\`
 ${errorDetails}
 \`\`\``;
-}
+};
 
 export const NOT_BOT_ADMIN = () => {
   return `╭〔 ⚠️ ${fytBold("AURA REED")}〕⬣
@@ -89,7 +101,7 @@ export const NOT_BOT_ADMIN = () => {
 ╰━━━━━━━━━━━━⬣
 ┃ > Este comando solo puede ser usado
 ┃ > si el bot es administrador del grupo.`;
-}
+};
 
 export const NOT_BOT_USER = () => {
   return `╭〔 ⚠️ ${fytBold("AURA REED")}〕⬣
@@ -97,7 +109,7 @@ export const NOT_BOT_USER = () => {
 ╰━━━━━━━━━━━━⬣
 ┃ > Este comando solo puede ser usado
 ┃ > por el misma instancia del bot.`;
-}
+};
 
 export const NOT_ADMIN = () => {
   return `╭〔 ⚠️ ${fytBold("AURA REED")}〕⬣
@@ -105,7 +117,7 @@ export const NOT_ADMIN = () => {
 ╰━━━━━━━━━━━━⬣
 ┃ > Este comando solo puede ser usado
 ┃ > por los administradores del grupo.`;
-}
+};
 
 export const NOT_PRIVATE = () => {
   return `╭〔 ⚠️ ${fytBold("AURA REED")}〕⬣
@@ -113,7 +125,7 @@ export const NOT_PRIVATE = () => {
 ╰━━━━━━━━━━━━⬣
 ┃ > Este comando solo puede ser usado
 ┃ > en chats privados.`;
-}
+};
 
 export const NOT_GROUP = () => {
   return `╭〔 ⚠️ ${fytBold("AURA REED")}〕⬣
@@ -121,7 +133,7 @@ export const NOT_GROUP = () => {
 ╰━━━━━━━━━━━━⬣
 ┃ > Este comando solo puede ser usado
 ┃ > en grupos.`;
-}
+};
 
 export const NOT_OWNER = () => {
   return `╭〔 ⚠️ ${fytBold("AURA REED")}〕⬣
@@ -129,7 +141,7 @@ export const NOT_OWNER = () => {
 ╰━━━━━━━━━━━━⬣
 ┃ > Este comando solo puede ser usado
 ┃ > por el dueño del bot.`;
-}
+};
 
 export const NOT_MOD = () => {
   return `╭〔 ⚠️ ${fytBold("AURA REED")}〕⬣
@@ -137,7 +149,7 @@ export const NOT_MOD = () => {
 ╰━━━━━━━━━━━━⬣
 ┃ > Este comando solo puede ser usado
 ┃ > por los moderadores del bot.`;
-}
+};
 
 export const NOT_PREMIUM = () => {
   return `╭〔 ⚠️ ${fytBold("AURA REED")}〕⬣
@@ -145,4 +157,4 @@ export const NOT_PREMIUM = () => {
 ╰━━━━━━━━━━━━⬣
 ┃ > Este comando solo puede ser usado
 ┃ > por los usuarios premium del bot.`;
-}
+};

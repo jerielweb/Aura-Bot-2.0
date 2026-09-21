@@ -1,4 +1,8 @@
-import { economyTarget, economyUser, formatCoins } from "../../core/economyRuntime.ts";
+import {
+  economyTarget,
+  economyUser,
+  formatCoins,
+} from "../../core/economyRuntime.ts";
 
 export default {
   name: ["bank", "bal", "balance", "coins"],

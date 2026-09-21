@@ -31,14 +31,16 @@ export async function loadPlugins() {
   await loadDir(PLUGINS_DIR);
 
   const uniquePlugins = new Set(plugins.values());
-  logInfo(`Plugins cargados: ${uniquePlugins.size} comandos (${plugins.size} alias)`);
+  logInfo(
+    `Plugins cargados: ${uniquePlugins.size} comandos (${plugins.size} alias)`,
+  );
 }
 
 async function loadDir(dir: string) {
   let entries: Dirent[] = [];
 
   try {
-    entries = await readdir(dir, { withFileTypes: true }) as Dirent[];
+    entries = (await readdir(dir, { withFileTypes: true })) as Dirent[];
   } catch {
     return;
   }
@@ -83,7 +85,9 @@ async function loadPlugin(filePath: string) {
       }
     }
   } catch (error: any) {
-    errorLog(`Error cargando plugin ${filePath}: ${error?.message ?? String(error)}`);
+    errorLog(
+      `Error cargando plugin ${filePath}: ${error?.message ?? String(error)}`,
+    );
   }
 }
 

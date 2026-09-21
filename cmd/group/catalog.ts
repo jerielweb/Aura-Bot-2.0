@@ -1,7 +1,13 @@
 import { fytBold } from "../../core/socketText.ts";
 
 function getCategories(ctx: any): string[] {
-  return [...new Set<string>((ctx.getPluginCategories?.() ?? []).map((category: string) => category.toLowerCase()))].sort();
+  return [
+    ...new Set<string>(
+      (ctx.getPluginCategories?.() ?? []).map((category: string) =>
+        category.toLowerCase(),
+      ),
+    ),
+  ].sort();
 }
 
 export default {
@@ -12,16 +18,21 @@ export default {
   adminOnly: true,
   async run(ctx: any) {
     const action = String(ctx.cmdName || "").toLowerCase();
-    const target = String(ctx.args?.[0] ?? "").trim().toLowerCase();
+    const target = String(ctx.args?.[0] ?? "")
+      .trim()
+      .toLowerCase();
     const categories = getCategories(ctx);
     const group = ctx.db.getGroup(ctx.from);
     const disabled = Array.isArray(group.catBlocked)
       ? group.catBlocked.map((category: string) => category.toLowerCase())
       : [];
-    const enabled = categories.filter((category) => !disabled.includes(category));
+    const enabled = categories.filter(
+      (category) => !disabled.includes(category),
+    );
 
     if (!target) {
-      return ctx.reply({ text: `╭〔 ⚙️ ${fytBold("CATÁLOGO DE COMANDOS")} 〕⬣
+      return ctx.reply({
+        text: `╭〔 ⚙️ ${fytBold("CATÁLOGO DE COMANDOS")} 〕⬣
 ┃ ${fytBold("USO")}
 ╰━━━━━━━━━━━━⬣
 
@@ -37,11 +48,14 @@ export default {
 ┃ ❌ Desactivados:
 ┃ ${disabled.join(", ") || "Ninguno"}
 
-╰〔 ⚡ ${fytBold("SYSTEM INFO")} 〕⬣` });
+╰〔 ⚡ ${fytBold("SYSTEM INFO")} 〕⬣`,
+      });
     }
 
     if (!categories.includes(target)) {
-      return ctx.reply({ text: `❌ El catálogo *${target}* no existe. Usa ${ctx.usedPrefix || "."}disable para ver los disponibles.` });
+      return ctx.reply({
+        text: `❌ El catálogo *${target}* no existe. Usa ${ctx.usedPrefix || "."}disable para ver los disponibles.`,
+      });
     }
 
     const shouldDisable = action === "disable";
@@ -50,6 +64,8 @@ export default {
       : disabled.filter((category: string) => category !== target);
 
     ctx.db.setGroup(ctx.from, { catBlocked: nextDisabled });
-    return ctx.reply({ text: `${shouldDisable ? "❌" : "✅"} El catálogo *${target}* ha sido ${shouldDisable ? "desactivado" : "activado"} para este grupo.` });
+    return ctx.reply({
+      text: `${shouldDisable ? "❌" : "✅"} El catálogo *${target}* ha sido ${shouldDisable ? "desactivado" : "activado"} para este grupo.`,
+    });
   },
 };

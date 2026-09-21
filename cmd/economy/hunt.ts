@@ -8,6 +8,13 @@ export default createEconomyActivity({
   cooldown: 30 * 60 * 1000,
   reward: [5000, 10000],
   xp: [20, 50],
-  success: ["Derrotaste a un Warden y el gremio te pagó", "Superaste la arena y cobraste", "Cazaste una criatura legendaria y obtuviste"],
-  fail: ["Un Creeper apareció detrás de ti y tuviste que huir.", "La criatura esquivó tu ataque y perdiste el rastro."],
+  success: [
+    "Derrotaste a un Warden y el gremio te pagó",
+    "Superaste la arena y cobraste",
+    "Cazaste una criatura legendaria y obtuviste",
+  ],
+  fail: [
+    "Un Creeper apareció detrás de ti y tuviste que huir.",
+    "La criatura esquivó tu ataque y perdiste el rastro.",
+  ],
 });

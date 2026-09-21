@@ -1,4 +1,7 @@
-import { getProfile, setPendingProfileAction } from "../../core/profileConfig.ts";
+import {
+  getProfile,
+  setPendingProfileAction,
+} from "../../core/profileConfig.ts";
 
 export default {
   name: ["divorce", "divorcio"],

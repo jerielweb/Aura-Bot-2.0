@@ -1,4 +1,9 @@
-import { cooldownText, formatCoins, getEconomyUser, setEconomyUser } from "../../core/economyConfig.ts";
+import {
+  cooldownText,
+  formatCoins,
+  getEconomyUser,
+  setEconomyUser,
+} from "../../core/economyConfig.ts";
 import { fytBold } from "../../core/socketText.ts";
 
 export default {
@@ -6,18 +11,24 @@ export default {
   category: "economy",
   description: "Reclama tu recompensa mensual con sistema de racha.",
   async run(ctx: any) {
-    const user = getEconomyUser(ctx.from, ctx.sender, { lastMonthly: 0, monthlyStreak: 0 });
+    const user = getEconomyUser(ctx.from, ctx.sender, {
+      lastMonthly: 0,
+      monthlyStreak: 0,
+    });
     const now = Date.now();
     const cooldown = 30 * 24 * 60 * 60 * 1000;
     const gracePeriod = 45 * 24 * 60 * 60 * 1000;
 
     if (user.lastMonthly && now - user.lastMonthly < cooldown) {
-      return ctx.reply(`⏳ Ya reclamaste tu sueldo mensual.\nVuelve en *${cooldownText(cooldown - (now - user.lastMonthly))}*.`);
+      return ctx.reply(
+        `⏳ Ya reclamaste tu sueldo mensual.\nVuelve en *${cooldownText(cooldown - (now - user.lastMonthly))}*.`,
+      );
     }
 
-    user.monthlyStreak = user.lastMonthly && now - user.lastMonthly > gracePeriod
-      ? 1
-      : (user.monthlyStreak || 0) + 1;
+    user.monthlyStreak =
+      user.lastMonthly && now - user.lastMonthly > gracePeriod
+        ? 1
+        : (user.monthlyStreak || 0) + 1;
     const baseReward = (Math.floor(Math.random() * 5000) + 10000) * 5;
     const streakBonus = Math.min(user.monthlyStreak - 1, 6) * 5000;
     const totalReward = baseReward + streakBonus;

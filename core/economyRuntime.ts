@@ -1,13 +1,20 @@
 import { jidNormalizedUser } from "@whiskeysockets/baileys";
 import { addAura } from "./economyConfig.ts";
-import { formatCoins, getEconomyUser, setEconomyUser } from "./economyConfig.ts";
+import {
+  formatCoins,
+  getEconomyUser,
+  setEconomyUser,
+} from "./economyConfig.ts";
 
 export async function economyTarget(ctx: any): Promise<string> {
   const message = ctx.msg?.message ?? {};
-  const infos = Object.values(message).map((value: any) => value?.contextInfo).filter(Boolean) as any[];
-  const target = infos.flatMap((info) => info.mentionedJid ?? [])[0]
-    ?? infos.find((info) => info.quotedMessage)?.participant
-    ?? ctx.sender;
+  const infos = Object.values(message)
+    .map((value: any) => value?.contextInfo)
+    .filter(Boolean) as any[];
+  const target =
+    infos.flatMap((info) => info.mentionedJid ?? [])[0] ??
+    infos.find((info) => info.quotedMessage)?.participant ??
+    ctx.sender;
   const normalized = jidNormalizedUser(target);
   if (normalized.endsWith("@lid") && typeof ctx.resolveLid === "function") {
     return jidNormalizedUser((await ctx.resolveLid(normalized)) || normalized);

@@ -10,14 +10,21 @@ export default {
   description: "Acepta una propuesta de matrimonio o divorcio.",
   category: "profile",
   async run(ctx: any) {
-    const action = getPendingProfileAction("marry", ctx.sender)
-      ?? getPendingProfileAction("divorce", ctx.sender);
-    if (!action) return ctx.reply("❌ No tienes una propuesta pendiente o ya expiró.");
+    const action =
+      getPendingProfileAction("marry", ctx.sender) ??
+      getPendingProfileAction("divorce", ctx.sender);
+    if (!action)
+      return ctx.reply("❌ No tienes una propuesta pendiente o ya expiró.");
 
     if (action.kind === "marry") {
-      if (getProfile(action.from).marriedTo || getProfile(action.to).marriedTo) {
+      if (
+        getProfile(action.from).marriedTo ||
+        getProfile(action.to).marriedTo
+      ) {
         clearPendingProfileAction(action);
-        return ctx.reply("❌ La propuesta ya no puede aceptarse porque uno de los dos tiene pareja.");
+        return ctx.reply(
+          "❌ La propuesta ya no puede aceptarse porque uno de los dos tiene pareja.",
+        );
       }
       updateProfile(action.from, { marriedTo: action.to });
       updateProfile(action.to, { marriedTo: action.from });

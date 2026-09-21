@@ -65,7 +65,8 @@ for (const column of [
   const exists = db_instance
     .prepare("SELECT 1 FROM pragma_table_info('bots') WHERE name = ?")
     .get(column[0]);
-  if (!exists) db_instance.exec(`ALTER TABLE bots ADD COLUMN ${column[0]} ${column[1]}`);
+  if (!exists)
+    db_instance.exec(`ALTER TABLE bots ADD COLUMN ${column[0]} ${column[1]}`);
 }
 
 for (const [table, column, definition] of [
@@ -80,11 +81,12 @@ for (const [table, column, definition] of [
   const exists = db_instance
     .prepare(`SELECT 1 FROM pragma_table_info('${table}') WHERE name = ?`)
     .get(column);
-  if (!exists) db_instance.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  if (!exists)
+    db_instance.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
 }
 
 const hierarchy = ["user", "premium", "mod", "coowner", "owner"] as const;
-type UserRole = typeof hierarchy[number];
+type UserRole = (typeof hierarchy)[number];
 
 const stmts = {
   getUser: db_instance.prepare("SELECT * FROM users WHERE jid = ?"),
@@ -97,7 +99,9 @@ const stmts = {
   updateUserByLid: db_instance.prepare(
     "UPDATE users SET username = ?, phone_number = ?, role = ?, is_banned = ?, data = ? WHERE lid = ?",
   ),
-  getAllUsers: db_instance.prepare("SELECT jid, lid, username, phone_number, role, is_banned, data FROM users"),
+  getAllUsers: db_instance.prepare(
+    "SELECT jid, lid, username, phone_number, role, is_banned, data FROM users",
+  ),
 
   getGroup: db_instance.prepare("SELECT * FROM groups WHERE jid = ?"),
   insertGroup: db_instance.prepare(
@@ -106,7 +110,9 @@ const stmts = {
   updateGroup: db_instance.prepare(
     "UPDATE groups SET group_id = ?, group_name = ?, antilink = ?, antiCalls = ?, antiToxic = ?, antiSpam = ?, antiStatus = ?, onlyAdmin = ?, prefix = ?, self = ?, topMsgUsers = ?, catBlocked = ?, data = ? WHERE jid = ?",
   ),
-  getAllGroups: db_instance.prepare("SELECT jid, group_id, group_name, antilink, antiCalls, antiToxic, antiSpam, onlyAdmin, prefix, self, topMsgUsers, data FROM groups"),
+  getAllGroups: db_instance.prepare(
+    "SELECT jid, group_id, group_name, antilink, antiCalls, antiToxic, antiSpam, onlyAdmin, prefix, self, topMsgUsers, data FROM groups",
+  ),
 
   getBot: db_instance.prepare("SELECT * FROM bots WHERE jid = ?"),
   insertBot: db_instance.prepare(
@@ -115,7 +121,9 @@ const stmts = {
   updateBot: db_instance.prepare(
     "UPDATE bots SET bot_id = ?, bot_name = ?, phone_number = ?, lid = ?, groups = ?, isMain = ?, status = ?, modPrefix = ?, modSelf = ?, data = ? WHERE jid = ?",
   ),
-  getAllBots: db_instance.prepare("SELECT jid, bot_id, bot_name, phone_number, lid, groups, isMain, status, modPrefix, modSelf, data FROM bots"),
+  getAllBots: db_instance.prepare(
+    "SELECT jid, bot_id, bot_name, phone_number, lid, groups, isMain, status, modPrefix, modSelf, data FROM bots",
+  ),
   deleteBot: db_instance.prepare("DELETE FROM bots WHERE jid = ?"),
 };
 
@@ -126,7 +134,9 @@ function normalizeJid(input: string) {
     .replace(/:.*/, "");
 }
 
-function safeJson<T = Record<string, any>>(value: string | null | undefined): T {
+function safeJson<T = Record<string, any>>(
+  value: string | null | undefined,
+): T {
   if (!value) return {} as T;
 
   try {
@@ -146,22 +156,24 @@ function safeJsonArray(value: string | null | undefined): string[] {
 }
 
 function getCurrentMessageWeek(date = new Date()): string {
-  const current = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const current = new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
+  );
   const day = current.getUTCDay() || 7;
   current.setUTCDate(current.getUTCDate() + 4 - day);
   const yearStart = new Date(Date.UTC(current.getUTCFullYear(), 0, 1));
-  const week = Math.ceil((((current.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  const week = Math.ceil(
+    ((current.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
+  );
   return `${current.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
 }
 
 function getUserRow(input: string, lid?: string | null) {
   const rawInput = String(input || "").trim();
   const key = normalizeJid(rawInput);
-  const candidates = [
-    rawInput,
-    key,
-    key ? `${key}@s.whatsapp.net` : "",
-  ].filter(Boolean);
+  const candidates = [rawInput, key, key ? `${key}@s.whatsapp.net` : ""].filter(
+    Boolean,
+  );
   const conditions = candidates.flatMap(() => ["jid = ?", "lid = ?"]);
   const values = candidates.flatMap((candidate) => [candidate, candidate]);
 
@@ -208,9 +220,13 @@ function getUser(input: string) {
   return {
     ...jsonData,
     jid: row.jid !== undefined ? row.jid : (jsonData.jid ?? key),
-    lid: row.lid ?? jsonData.lid ?? (rawInput.endsWith("@lid") ? rawInput : null),
+    lid:
+      row.lid ?? jsonData.lid ?? (rawInput.endsWith("@lid") ? rawInput : null),
     username: row.username ?? jsonData.username ?? null,
-    phone_number: row.phone_number !== undefined ? row.phone_number : (jsonData.phone_number ?? key),
+    phone_number:
+      row.phone_number !== undefined
+        ? row.phone_number
+        : (jsonData.phone_number ?? key),
     role: row.role ?? jsonData.role ?? "user",
     is_banned: Number(row.is_banned ?? jsonData.is_banned ?? 0),
     data: jsonData,
@@ -266,11 +282,17 @@ function getGroup(jid: string) {
   }
 
   const jsonData = safeJson<Record<string, any>>(row.data);
-  const storedTopMsgUsers = safeJson<any[]>(row.topMsgUsers ?? jsonData.topMsgUsers);
+  const storedTopMsgUsers = safeJson<any[]>(
+    row.topMsgUsers ?? jsonData.topMsgUsers,
+  );
   const currentWeek = getCurrentMessageWeek();
-  const hasPreviousWeek = storedTopMsgUsers.length > 0 && storedTopMsgUsers.some((user) => user?.week !== currentWeek);
+  const hasPreviousWeek =
+    storedTopMsgUsers.length > 0 &&
+    storedTopMsgUsers.some((user) => user?.week !== currentWeek);
   if (hasPreviousWeek) {
-    db_instance.prepare("UPDATE groups SET topMsgUsers = '[]' WHERE jid = ?").run(key);
+    db_instance
+      .prepare("UPDATE groups SET topMsgUsers = '[]' WHERE jid = ?")
+      .run(key);
   }
 
   return {
@@ -285,7 +307,9 @@ function getGroup(jid: string) {
     onlyAdmin: Number(row.onlyAdmin ?? jsonData.onlyAdmin ?? 0),
     prefix: row.prefix ?? jsonData.prefix ?? null,
     self: Number(row.self ?? jsonData.self ?? 0),
-    catBlocked: safeJsonArray(row.catBlocked ?? jsonData.catBlocked ?? '["nsfw"]'),
+    catBlocked: safeJsonArray(
+      row.catBlocked ?? jsonData.catBlocked ?? '["nsfw"]',
+    ),
     privateMode: Boolean(row.privateMode ?? jsonData.privateMode ?? false),
     adminMode: Boolean(row.adminMode ?? jsonData.adminMode ?? false),
     primaryBot: row.primaryBot ?? jsonData.primaryBot ?? null,
@@ -362,7 +386,10 @@ export const db = {
     const rawJid = isLidOnly
       ? null
       : String(dataObject?.jid ?? jid ?? key).trim() || key;
-    const rawLid = String(dataObject?.lid ?? currentData?.lid ?? (isLidOnly ? jid : "")).trim() || null;
+    const rawLid =
+      String(
+        dataObject?.lid ?? currentData?.lid ?? (isLidOnly ? jid : ""),
+      ).trim() || null;
     const payload = {
       ...merged.data,
       ...merged,
@@ -388,7 +415,9 @@ export const db = {
     }
 
     const storedLid = rawLid || row.lid || merged.lid || null;
-    const phoneNumber = isLidOnly ? null : (merged.phone_number ?? row.phone_number ?? key);
+    const phoneNumber = isLidOnly
+      ? null
+      : (merged.phone_number ?? row.phone_number ?? key);
     if (row.jid === null && storedLid) {
       stmts.updateUserByLid.run(
         merged.username ?? row.username ?? null,
@@ -436,8 +465,12 @@ export const db = {
         Number(Boolean(merged.onlyAdmin ?? 0)),
         merged.prefix ?? null,
         Number(Boolean(merged.self ?? 0)),
-        JSON.stringify(Array.isArray(merged.topMsgUsers) ? merged.topMsgUsers : []),
-        JSON.stringify(Array.isArray(merged.catBlocked) ? merged.catBlocked : ["nsfw"]),
+        JSON.stringify(
+          Array.isArray(merged.topMsgUsers) ? merged.topMsgUsers : [],
+        ),
+        JSON.stringify(
+          Array.isArray(merged.catBlocked) ? merged.catBlocked : ["nsfw"],
+        ),
         JSON.stringify(payload),
       );
       return;
@@ -454,8 +487,16 @@ export const db = {
       Number(Boolean(merged.onlyAdmin ?? row.onlyAdmin ?? 0)),
       merged.prefix !== undefined ? merged.prefix : (row.prefix ?? null),
       Number(Boolean(merged.self ?? row.self ?? 0)),
-      JSON.stringify(Array.isArray(merged.topMsgUsers) ? merged.topMsgUsers : safeJson<Record<string, any>[]>(row.topMsgUsers)),
-      JSON.stringify(Array.isArray(merged.catBlocked) ? merged.catBlocked : safeJsonArray(row.catBlocked ?? '["nsfw"]')),
+      JSON.stringify(
+        Array.isArray(merged.topMsgUsers)
+          ? merged.topMsgUsers
+          : safeJson<Record<string, any>[]>(row.topMsgUsers),
+      ),
+      JSON.stringify(
+        Array.isArray(merged.catBlocked)
+          ? merged.catBlocked
+          : safeJsonArray(row.catBlocked ?? '["nsfw"]'),
+      ),
       JSON.stringify(payload),
       key,
     );
@@ -495,10 +536,16 @@ export const db = {
       merged.bot_name ?? row.bot_name ?? null,
       merged.phone_number ?? row.phone_number ?? null,
       merged.lid ?? row.lid ?? null,
-      JSON.stringify(Array.isArray(merged.groups) ? merged.groups : safeJsonArray(row.groups)),
+      JSON.stringify(
+        Array.isArray(merged.groups)
+          ? merged.groups
+          : safeJsonArray(row.groups),
+      ),
       Number(Boolean(merged.isMain ?? row.isMain ?? 0)),
       merged.status ?? row.status ?? "offline",
-      merged.modPrefix !== undefined ? merged.modPrefix : (row.modPrefix ?? null),
+      merged.modPrefix !== undefined
+        ? merged.modPrefix
+        : (row.modPrefix ?? null),
       Number(Boolean(merged.modSelf ?? row.modSelf ?? 0)),
       JSON.stringify(payload),
       key,
@@ -523,7 +570,9 @@ export const db = {
   },
 
   setPrimary(groupJid: string, botJid: string) {
-    this.setGroup(groupJid, { primaryBot: String(botJid || "").trim() || null });
+    this.setGroup(groupJid, {
+      primaryBot: String(botJid || "").trim() || null,
+    });
   },
 
   addBotGroup(botJid: string, groupJid: string) {
@@ -532,18 +581,22 @@ export const db = {
 
     const bot = getBot(botJid);
     const groups = Array.isArray(bot.groups) ? bot.groups : [];
-    if (!groups.includes(group)) this.setBot(botJid, { groups: [...groups, group] });
+    if (!groups.includes(group))
+      this.setBot(botJid, { groups: [...groups, group] });
   },
 
   getBotById(botId: string) {
     const normalized = String(botId || "").trim();
     if (!normalized) return null;
 
-    return this.getAllBots().find((bot) =>
-      bot.bot_id === normalized ||
-      normalizeJid(bot.bot_id) === normalizeJid(normalized) ||
-      normalizeJid(bot.jid) === normalizeJid(normalized),
-    ) ?? null;
+    return (
+      this.getAllBots().find(
+        (bot) =>
+          bot.bot_id === normalized ||
+          normalizeJid(bot.bot_id) === normalizeJid(normalized) ||
+          normalizeJid(bot.jid) === normalizeJid(normalized),
+      ) ?? null
+    );
   },
 
   deleteBot(jid: string) {
@@ -589,8 +642,10 @@ export const db = {
 
   hasRole(jid: string, role: string) {
     const user = getUser(jid);
-    const currentIndex = hierarchy.indexOf((user?.role ?? "user") as typeof hierarchy[number]);
-    const targetIndex = hierarchy.indexOf(role as typeof hierarchy[number]);
+    const currentIndex = hierarchy.indexOf(
+      (user?.role ?? "user") as (typeof hierarchy)[number],
+    );
+    const targetIndex = hierarchy.indexOf(role as (typeof hierarchy)[number]);
 
     return currentIndex >= 0 && targetIndex >= 0 && currentIndex >= targetIndex;
   },
@@ -617,9 +672,12 @@ export const db = {
       const current = getUserRow(lookup, configuredLid || null);
       const jid = configuredJid || current?.jid || null;
       const lid = configuredLid || current?.lid || null;
-      const canonicalJid = jid && !jid.endsWith("@lid")
-        ? (jid.includes("@") ? jid : `${jid}@s.whatsapp.net`)
-        : null;
+      const canonicalJid =
+        jid && !jid.endsWith("@lid")
+          ? jid.includes("@")
+            ? jid
+            : `${jid}@s.whatsapp.net`
+          : null;
 
       if (!current) {
         const phone = canonicalJid ? normalizeJid(canonicalJid) : null;
@@ -689,5 +747,3 @@ export const db = {
 };
 
 db.syncDefaultUserRoles();
-
-console.log("Database initialized successfully.");

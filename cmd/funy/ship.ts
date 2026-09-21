@@ -12,7 +12,13 @@ async function getProfilePic(sock: any, jid: string) {
   }
 }
 
-function drawCircleAvatar(context: any, image: any, x: number, y: number, size: number) {
+function drawCircleAvatar(
+  context: any,
+  image: any,
+  x: number,
+  y: number,
+  size: number,
+) {
   context.save();
   context.beginPath();
   context.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
@@ -32,17 +38,53 @@ function drawCircleAvatar(context: any, image: any, x: number, y: number, size: 
   context.stroke();
 }
 
-function drawHeart(context: any, centerX: number, centerY: number, size: number, fill: string, stroke: string, lineWidth: number) {
+function drawHeart(
+  context: any,
+  centerX: number,
+  centerY: number,
+  size: number,
+  fill: string,
+  stroke: string,
+  lineWidth: number,
+) {
   const top = centerY - size * 0.45;
   const bottom = centerY + size * 0.55;
   const lobe = size * 0.42;
   context.save();
   context.beginPath();
   context.moveTo(centerX, centerY - size * 0.08);
-  context.bezierCurveTo(centerX - size * 0.16, centerY - size * 0.36, centerX - lobe, top, centerX - lobe, centerY - size * 0.05);
-  context.bezierCurveTo(centerX - lobe, centerY + size * 0.28, centerX - size * 0.2, centerY + size * 0.42, centerX, bottom);
-  context.bezierCurveTo(centerX + size * 0.2, centerY + size * 0.42, centerX + lobe, centerY + size * 0.28, centerX + lobe, centerY - size * 0.05);
-  context.bezierCurveTo(centerX + lobe, top, centerX + size * 0.16, centerY - size * 0.36, centerX, centerY - size * 0.08);
+  context.bezierCurveTo(
+    centerX - size * 0.16,
+    centerY - size * 0.36,
+    centerX - lobe,
+    top,
+    centerX - lobe,
+    centerY - size * 0.05,
+  );
+  context.bezierCurveTo(
+    centerX - lobe,
+    centerY + size * 0.28,
+    centerX - size * 0.2,
+    centerY + size * 0.42,
+    centerX,
+    bottom,
+  );
+  context.bezierCurveTo(
+    centerX + size * 0.2,
+    centerY + size * 0.42,
+    centerX + lobe,
+    centerY + size * 0.28,
+    centerX + lobe,
+    centerY - size * 0.05,
+  );
+  context.bezierCurveTo(
+    centerX + lobe,
+    top,
+    centerX + size * 0.16,
+    centerY - size * 0.36,
+    centerX,
+    centerY - size * 0.08,
+  );
   context.closePath();
   context.fillStyle = fill;
   context.fill();
@@ -52,7 +94,14 @@ function drawHeart(context: any, centerX: number, centerY: number, size: number,
   context.restore();
 }
 
-function drawProgressBar(context: any, x: number, y: number, width: number, height: number, percent: number) {
+function drawProgressBar(
+  context: any,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  percent: number,
+) {
   const radius = height / 2;
   context.beginPath();
   context.roundRect(x, y, width, height, radius);
@@ -65,7 +114,15 @@ function drawProgressBar(context: any, x: number, y: number, width: number, heig
     context.fillStyle = "#ff0505";
     context.fill();
   }
-  drawHeart(context, x + 10 + fillWidth - 10, y + height / 2 - 8, 100, "#ff1010", "#050505", 5);
+  drawHeart(
+    context,
+    x + 10 + fillWidth - 10,
+    y + height / 2 - 8,
+    100,
+    "#ff1010",
+    "#050505",
+    5,
+  );
 }
 
 export default {
@@ -76,19 +133,33 @@ export default {
 
   async run(ctx: any) {
     const messageContext = ctx.msg?.message?.extendedTextMessage?.contextInfo;
-    const mentioned = Array.isArray(messageContext?.mentionedJid) ? messageContext.mentionedJid : [];
+    const mentioned = Array.isArray(messageContext?.mentionedJid)
+      ? messageContext.mentionedJid
+      : [];
     const quotedParticipant = messageContext?.participant;
     let userA = ctx.sender;
-    let userB = mentioned.length >= 2 ? mentioned[1] : mentioned[0] || quotedParticipant;
+    let userB =
+      mentioned.length >= 2 ? mentioned[1] : mentioned[0] || quotedParticipant;
     if (mentioned.length >= 2) userA = mentioned[0];
 
-    if (!userA || !userB) return ctx.reply({ text: "『💘』No pude identificar a los usuarios. Mencioná a alguien (o respondé su mensaje) para hacer el ship.\n\n*Uso:* .ship @usuario" });
-    if (userA === userB) return ctx.reply({ text: "『💘』No podés hacerte ship con vos mismo, xd." });
+    if (!userA || !userB)
+      return ctx.reply({
+        text: "『💘』No pude identificar a los usuarios. Mencioná a alguien (o respondé su mensaje) para hacer el ship.\n\n*Uso:* .ship @usuario",
+      });
+    if (userA === userB)
+      return ctx.reply({
+        text: "『💘』No podés hacerte ship con vos mismo, xd.",
+      });
 
     userA = await ctx.resolveLid(userA);
     userB = await ctx.resolveLid(userB);
-    const mentions = [userA, userB].filter((jid) => typeof jid === "string" && jid.includes("@"));
-    if (mentions.length !== 2) return ctx.reply({ text: "『💘』No pude identificar correctamente a los dos usuarios." });
+    const mentions = [userA, userB].filter(
+      (jid) => typeof jid === "string" && jid.includes("@"),
+    );
+    if (mentions.length !== 2)
+      return ctx.reply({
+        text: "『💘』No pude identificar correctamente a los dos usuarios.",
+      });
 
     const width = 1024;
     const height = 740;
@@ -99,14 +170,31 @@ export default {
     const avatarSize = 310;
     const avatarY = 85;
     const avatarX = 85;
-    const [imageA, imageB] = await Promise.all([getProfilePic(ctx.sock, userA), getProfilePic(ctx.sock, userB)]);
+    const [imageA, imageB] = await Promise.all([
+      getProfilePic(ctx.sock, userA),
+      getProfilePic(ctx.sock, userB),
+    ]);
     drawCircleAvatar(canvasContext, imageA, avatarX, avatarY, avatarSize);
-    drawCircleAvatar(canvasContext, imageB, width - avatarX - avatarSize, avatarY, avatarSize);
+    drawCircleAvatar(
+      canvasContext,
+      imageB,
+      width - avatarX - avatarSize,
+      avatarY,
+      avatarSize,
+    );
 
     const percent = Math.floor(Math.random() * 101);
     const heartCenterX = 512;
     const heartCenterY = 400;
-    drawHeart(canvasContext, heartCenterX, heartCenterY, 180, "#ff007f", "#050505", 5);
+    drawHeart(
+      canvasContext,
+      heartCenterX,
+      heartCenterY,
+      180,
+      "#ff007f",
+      "#050505",
+      5,
+    );
     canvasContext.font = "bold 45px sans-serif";
     canvasContext.textAlign = "center";
     canvasContext.textBaseline = "middle";
@@ -122,6 +210,10 @@ export default {
     else if (percent >= 30) result = "Mejor quedan como amigos.";
 
     const caption = `╭〔 💘 ${fytBold("¿HAY SHIP?")} 〕⬣\n\n┃ @${userA.split("@")[0]} 💞 @${userB.split("@")[0]}\n┃ ${fytBold("Porcentaje:")} ${percent}%\n┃ ${result}\n\n╰〔 ⚡ ${fytBold("FUN")} 〕⬣`;
-    return ctx.sock.sendMessage(ctx.from, { image: canvas.toBuffer("image/png"), caption, mentions }, { quoted: ctx.msg });
+    return ctx.sock.sendMessage(
+      ctx.from,
+      { image: canvas.toBuffer("image/png"), caption, mentions },
+      { quoted: ctx.msg },
+    );
   },
 };

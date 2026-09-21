@@ -1,8 +1,11 @@
 import { fytBold } from "../../core/socketText.ts";
 
-const status = (value: unknown): string => value ? "✅ Activado" : "❌ Desactivado";
-const onlyAdmin = (value: unknown): string => value ? "🔒 Solo Admins" : "🔓 Todos";
-const onlyAdminMembers = (value: unknown): string => value ? "🔓 Todos" : "🔒 Solo Admins";
+const status = (value: unknown): string =>
+  value ? "✅ Activado" : "❌ Desactivado";
+const onlyAdmin = (value: unknown): string =>
+  value ? "🔒 Solo Admins" : "🔓 Todos";
+const onlyAdminMembers = (value: unknown): string =>
+  value ? "🔓 Todos" : "🔒 Solo Admins";
 
 function formatDuration(seconds: unknown): string {
   const value = Number(seconds || 0);
@@ -25,7 +28,9 @@ export default {
   adminOnly: true,
   async run(ctx: any) {
     const metadata = ctx.groupMeta || {};
-    const participants = Array.isArray(metadata.participants) ? metadata.participants : [];
+    const participants = Array.isArray(metadata.participants)
+      ? metadata.participants
+      : [];
     const admins = participants.filter((participant: any) => participant.admin);
     const group = ctx.db.getGroup(ctx.from);
 

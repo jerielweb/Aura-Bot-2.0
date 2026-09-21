@@ -13,9 +13,20 @@ export default {
 
     if (quotedMessage) {
       const type = Object.keys(quotedMessage)[0];
-      if (["imageMessage", "videoMessage", "stickerMessage", "audioMessage", "documentMessage"].includes(type)) {
+      if (
+        [
+          "imageMessage",
+          "videoMessage",
+          "stickerMessage",
+          "audioMessage",
+          "documentMessage",
+        ].includes(type)
+      ) {
         const media = quotedMessage[type];
-        const stream = await downloadContentFromMessage(media, type.replace("Message", "") as any);
+        const stream = await downloadContentFromMessage(
+          media,
+          type.replace("Message", "") as any,
+        );
         const chunks: Buffer[] = [];
         for await (const chunk of stream) chunks.push(Buffer.from(chunk));
         const buffer = Buffer.concat(chunks);
@@ -45,7 +56,10 @@ export default {
       }
     }
 
-    const quotedText = quotedMessage?.conversation || quotedMessage?.extendedTextMessage?.text || "";
+    const quotedText =
+      quotedMessage?.conversation ||
+      quotedMessage?.extendedTextMessage?.text ||
+      "";
     const finalText = customText || quotedText;
     if (!finalText) {
       let text = `╭〔 ⚠️ ${fytBold("AURA REED")} 〕⬣\n`;

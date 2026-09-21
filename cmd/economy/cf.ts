@@ -1,4 +1,9 @@
-import { cooldownText, formatCoins, getEconomyUser, setEconomyUser } from "../../core/economyConfig.ts";
+import {
+  cooldownText,
+  formatCoins,
+  getEconomyUser,
+  setEconomyUser,
+} from "../../core/economyConfig.ts";
 
 export default {
   name: ["cf", "caraocruz", "coinflip"],
@@ -11,12 +16,23 @@ export default {
     const now = Date.now();
     const cooldown = 60 * 1000;
 
-    if (!Number.isInteger(amount) || amount <= 0 || !["cara", "cruz"].includes(choice)) {
-      return ctx.reply(`⚠️ Usa: *${ctx.usedPrefix ?? "."}cf [cantidad] [cara|cruz]*`);
+    if (
+      !Number.isInteger(amount) ||
+      amount <= 0 ||
+      !["cara", "cruz"].includes(choice)
+    ) {
+      return ctx.reply(
+        `⚠️ Usa: *${ctx.usedPrefix ?? "."}cf [cantidad] [cara|cruz]*`,
+      );
     }
-    if (user.bolsillo < amount) return ctx.reply(`❌ No tienes suficientes monedas. Tienes *₡${formatCoins(user.bolsillo)}*.`);
+    if (user.bolsillo < amount)
+      return ctx.reply(
+        `❌ No tienes suficientes monedas. Tienes *₡${formatCoins(user.bolsillo)}*.`,
+      );
     if (user.lastCf && now - user.lastCf < cooldown) {
-      return ctx.reply(`⏳ Espera *${cooldownText(cooldown - (now - user.lastCf))}* para volver a jugar.`);
+      return ctx.reply(
+        `⏳ Espera *${cooldownText(cooldown - (now - user.lastCf))}* para volver a jugar.`,
+      );
     }
 
     user.lastCf = now;

@@ -43,8 +43,6 @@ export function logInfo(message: string) {
   );
 }
 
-
-
 export function errorLog(message: string) {
   const timestamp = TimeZone();
   console.error(
@@ -77,17 +75,32 @@ export function cmdLog({
   });
 
   console.log(chalk.cyan("╭───────────────────────────────────────────────╮"));
-  console.log(`${chalk.cyan("│")} ${chalk.gray("🤖\u00A0Bot:")}       ${chalk.blue(`${botName} (${botNumber})`)}`);
-  console.log(`${chalk.cyan("│")} ${chalk.gray("👤\u00A0Usuario:")}   ${chalk.white(`${nombreUsuario} (+${senderNumber || "desconocido"})`)}`);
-  console.log(`${chalk.cyan("│")} ${chalk.gray("🛡️\u00A0Rango:")}     ${chalk.yellow(rango || "USUARIO")}`);
-  console.log(`${chalk.cyan("│")} ${chalk.gray("👥\u00A0Grupo:")}     ${chalk.green(groupName)}`);
-  console.log(`${chalk.cyan("│")} ${chalk.gray("🕒\u00A0Fecha:")}     ${chalk.magenta(timestamp)}`);
+  console.log(
+    `${chalk.cyan("│")} ${chalk.gray("🤖\u00A0Bot:")}       ${chalk.blue(`${botName} (${botNumber})`)}`,
+  );
+  console.log(
+    `${chalk.cyan("│")} ${chalk.gray("👤\u00A0Usuario:")}   ${chalk.white(`${nombreUsuario} (+${senderNumber || "desconocido"})`)}`,
+  );
+  console.log(
+    `${chalk.cyan("│")} ${chalk.gray("🛡️\u00A0Rango:")}     ${chalk.yellow(rango || "USUARIO")}`,
+  );
+  console.log(
+    `${chalk.cyan("│")} ${chalk.gray("👥\u00A0Grupo:")}     ${chalk.green(groupName)}`,
+  );
+  console.log(
+    `${chalk.cyan("│")} ${chalk.gray("🕒\u00A0Fecha:")}     ${chalk.magenta(timestamp)}`,
+  );
   console.log(chalk.cyan("├───────────────────────────────────────────────┤"));
-  console.log(`${chalk.cyan("│")} ${chalk.cyan.bold("COMANDO")} ${chalk.white(`> ${commandName}`)} ${chalk.gray(`${commandText}`)}`);
+  console.log(
+    `${chalk.cyan("│")} ${chalk.cyan.bold("COMANDO")} ${chalk.white(`> ${commandName}`)} ${chalk.gray(`${commandText}`)}`,
+  );
   console.log(chalk.cyan("╰───────────────────────────────────────────────╯"));
 }
 
-export function connectionLog(message: string, level: "info" | "warn" | "error" | "alert" = "info") {
+export function connectionLog(
+  message: string,
+  level: "info" | "warn" | "error" | "alert" = "info",
+) {
   const timestamp = TimeZone();
   const prefixMap = {
     info: chalk.cyan("[INFO]"),

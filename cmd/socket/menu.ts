@@ -1,6 +1,9 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { prepareWAMessageMedia, generateWAMessageFromContent } from "@whiskeysockets/baileys";
+import {
+  prepareWAMessageMedia,
+  generateWAMessageFromContent,
+} from "@whiskeysockets/baileys";
 import { getPlugins } from "../../core/cmdLoader.ts";
 import { fytBold } from "../../core/socketText.ts";
 
@@ -31,7 +34,8 @@ export default {
   botUserOnly: false,
 
   async run({ sock, from, msg, args, prefix, usedPrefix, db: runtimeDb }) {
-    const activePrefix = prefix ?? usedPrefix ?? globalThis.DEFAULT_PREFIXES?.[0] ?? ".";
+    const activePrefix =
+      prefix ?? usedPrefix ?? globalThis.DEFAULT_PREFIXES?.[0] ?? ".";
     const remoteJid = from;
     const pushName = msg?.pushName || "Usuario";
     const botName = runtimeDb?.getBot?.(sock.user?.id)?.bot_name || "Aura Reed";
@@ -39,7 +43,7 @@ export default {
     const tituloEstilizado = fytBold(`${String(botName).toUpperCase()}`);
     const chanellink = "https://aetheryx.xyz/";
     const requested = args && args[0] ? args[0].toLowerCase() : null;
-    const AutorBot = globalThis.DEFAULT_BOT_AUTHOR
+    const AutorBot = globalThis.DEFAULT_BOT_AUTHOR;
 
     const categories = getCommandCategories();
     const categoryAliases: Record<string, string> = {
@@ -73,9 +77,11 @@ export default {
     textoMenu += `╰━━━━━━━━━━━━━⬣\n\n`;
 
     const pluginMap = getPlugins();
-    const plugins = [...new Map(
-      [...pluginMap.values()].map((plugin) => [plugin, plugin]),
-    ).values()].filter((plugin) => plugin && typeof plugin.run === "function");
+    const plugins = [
+      ...new Map(
+        [...pluginMap.values()].map((plugin) => [plugin, plugin]),
+      ).values(),
+    ].filter((plugin) => plugin && typeof plugin.run === "function");
 
     const pluginsByCategory = new Map<string, any[]>();
     for (const plugin of plugins) {
@@ -94,7 +100,11 @@ export default {
       textErr += `> Categorías disponibles:\n`;
       textErr += `${categories.join("\n")}\n\n`;
       textErr += `╰〔 ⚡ ${fytBold("SYSTEM")} 〕⬣`;
-      return await sock.sendMessage(remoteJid, { text: textErr }, { quoted: msg });
+      return await sock.sendMessage(
+        remoteJid,
+        { text: textErr },
+        { quoted: msg },
+      );
     }
 
     for (const cat of catsToShow) {
@@ -103,7 +113,9 @@ export default {
 
       textoMenu += `┏━━〔 ${fytBold(String(cat).charAt(0).toUpperCase() + String(cat).slice(1))} 〕━━⬣\n`;
 
-      for (const cmd of group.sort((a, b) => String(a.name?.[0] ?? "").localeCompare(String(b.name?.[0] ?? "")))) {
+      for (const cmd of group.sort((a, b) =>
+        String(a.name?.[0] ?? "").localeCompare(String(b.name?.[0] ?? "")),
+      )) {
         const names = Array.isArray(cmd.name) ? cmd.name : [cmd.name];
 
         for (const alias of names.slice(0, 1)) {
@@ -127,10 +139,15 @@ export default {
     let bannerPath = path.resolve("./assets/img/BotBanner.jpg");
     let isGif = false;
 
-    const customBanner = runtimeDb?.getBot?.(sock.user?.id)?.data?.customBanner ?? runtimeDb?.customBanner ?? null;
+    const customBanner =
+      runtimeDb?.getBot?.(sock.user?.id)?.data?.customBanner ??
+      runtimeDb?.customBanner ??
+      null;
     if (customBanner?.path && existsSync(customBanner.path)) {
       bannerPath = customBanner.path;
-      isGif = Boolean(customBanner.mimetype?.includes("gif") || bannerPath.endsWith(".gif"));
+      isGif = Boolean(
+        customBanner.mimetype?.includes("gif") || bannerPath.endsWith(".gif"),
+      );
     }
 
     let imgBanner: any = mediaCacheMap.get(bannerPath);
@@ -195,4 +212,3 @@ export default {
     });
   },
 };
-

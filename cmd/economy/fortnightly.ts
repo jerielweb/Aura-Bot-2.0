@@ -1,21 +1,34 @@
-import { cooldownText, formatCoins, getEconomyUser, setEconomyUser } from "../../core/economyConfig.ts";
-import {fytBold} from "./../../core/socketText.ts";
+import {
+  cooldownText,
+  formatCoins,
+  getEconomyUser,
+  setEconomyUser,
+} from "../../core/economyConfig.ts";
+import { fytBold } from "./../../core/socketText.ts";
 
 export default {
   name: ["fortnightly", "quincenal", "quinsenal", "quincena"],
   category: "economy",
   description: "Reclama tu recompensa quincenal.",
   async run(ctx: any) {
-    const user = getEconomyUser(ctx.from, ctx.sender, { lastFortnightly: 0, fortnightlyStreak: 0 });
+    const user = getEconomyUser(ctx.from, ctx.sender, {
+      lastFortnightly: 0,
+      fortnightlyStreak: 0,
+    });
     const now = Date.now();
     const cooldown = 15 * 24 * 60 * 60 * 1000;
     const gracePeriod = 22 * 24 * 60 * 60 * 1000;
 
     if (user.lastFortnightly && now - user.lastFortnightly < cooldown) {
-      return ctx.reply(`⏳ Ya reclamaste tu recompensa quincenal.\nVuelve en *${cooldownText(cooldown - (now - user.lastFortnightly))}*.`);
+      return ctx.reply(
+        `⏳ Ya reclamaste tu recompensa quincenal.\nVuelve en *${cooldownText(cooldown - (now - user.lastFortnightly))}*.`,
+      );
     }
 
-    user.fortnightlyStreak = user.lastFortnightly && now - user.lastFortnightly > gracePeriod ? 1 : (user.fortnightlyStreak || 0) + 1;
+    user.fortnightlyStreak =
+      user.lastFortnightly && now - user.lastFortnightly > gracePeriod
+        ? 1
+        : (user.fortnightlyStreak || 0) + 1;
     const baseReward = Math.floor(Math.random() * 5001) + 10000;
     const streakBonus = Math.min(user.fortnightlyStreak - 1, 6) * 1500;
     const totalReward = baseReward + streakBonus;

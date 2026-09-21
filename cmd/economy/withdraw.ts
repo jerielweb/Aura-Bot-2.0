@@ -1,4 +1,9 @@
-import { amountArg, economyUser, formatCoins, saveEconomy } from "../../core/economyRuntime.ts";
+import {
+  amountArg,
+  economyUser,
+  formatCoins,
+  saveEconomy,
+} from "../../core/economyRuntime.ts";
 
 export default {
   name: ["withdraw", "retirar", "with"],
@@ -7,9 +12,16 @@ export default {
   async run(ctx: any) {
     const user = economyUser(ctx);
     const raw = String(ctx.args?.[0] ?? "").toLowerCase();
-    const amount = raw === "all" || raw === "todo" ? user.banco : amountArg(raw);
-    if (amount <= 0) return ctx.reply("⚠️ Ingresa una cantidad válida. Ejemplo: *.with 100* o *.with all*");
-    if (user.banco < amount) return ctx.reply(`❌ No tienes suficientes fondos. Tienes *₡${formatCoins(user.banco)}*.`);
+    const amount =
+      raw === "all" || raw === "todo" ? user.banco : amountArg(raw);
+    if (amount <= 0)
+      return ctx.reply(
+        "⚠️ Ingresa una cantidad válida. Ejemplo: *.with 100* o *.with all*",
+      );
+    if (user.banco < amount)
+      return ctx.reply(
+        `❌ No tienes suficientes fondos. Tienes *₡${formatCoins(user.banco)}*.`,
+      );
     user.banco -= amount;
     user.bolsillo += amount;
     saveEconomy(ctx, ctx.sender, user);

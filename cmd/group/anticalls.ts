@@ -14,10 +14,14 @@ export default {
     const value = String(ctx.args?.[0] || "").toLowerCase();
     const group = ctx.db.getGroup(ctx.from);
     if (!ON.includes(value) && !OFF.includes(value)) {
-      return ctx.reply({ text: `╭〔 📵 ${fytBold("AURA REED")} 〕⬣\n┃ ⚙️ ${fytBold("ANTI-CALL")}\n╰━━━━━━━━━━━━⬣\n\n┃ ℹ️ Estado actual: ${group.antiCalls ? "✅ Activado" : "❌ Desactivado"}\n\n┣━━━━━━━━━━━━⬣\n\n┃ ➪ ${ctx.usedPrefix || "."}anticalls on\n┃ ✦ Activar bloqueo de llamadas\n\n┃ ➪ ${ctx.usedPrefix || "."}anticalls off\n┃ ✦ Desactivar bloqueo de llamadas\n\n╰〔 ⚡ ${fytBold("SYSTEM INFO")} 〕⬣` });
+      return ctx.reply({
+        text: `╭〔 📵 ${fytBold("AURA REED")} 〕⬣\n┃ ⚙️ ${fytBold("ANTI-CALL")}\n╰━━━━━━━━━━━━⬣\n\n┃ ℹ️ Estado actual: ${group.antiCalls ? "✅ Activado" : "❌ Desactivado"}\n\n┣━━━━━━━━━━━━⬣\n\n┃ ➪ ${ctx.usedPrefix || "."}anticalls on\n┃ ✦ Activar bloqueo de llamadas\n\n┃ ➪ ${ctx.usedPrefix || "."}anticalls off\n┃ ✦ Desactivar bloqueo de llamadas\n\n╰〔 ⚡ ${fytBold("SYSTEM INFO")} 〕⬣`,
+      });
     }
     const enabled = ON.includes(value);
     ctx.db.setGroup(ctx.from, { antiCalls: enabled ? 1 : 0 });
-    return ctx.reply({ text: `╭〔 ${enabled ? "✅" : "❌"} ${fytBold("AURA REED")} 〕⬣\n┃ 📵 ${fytBold("SISTEMA ANTI-CALL")}\n╰━━━━━━━━━━━━⬣\n\n┃ > El bloqueo de llamadas ha\n┃ > sido ${enabled ? "activado" : "desactivado"} con éxito.\n\n╰〔 ⚡ ${fytBold("SYSTEM")} 〕⬣` });
+    return ctx.reply({
+      text: `╭〔 ${enabled ? "✅" : "❌"} ${fytBold("AURA REED")} 〕⬣\n┃ 📵 ${fytBold("SISTEMA ANTI-CALL")}\n╰━━━━━━━━━━━━⬣\n\n┃ > El bloqueo de llamadas ha\n┃ > sido ${enabled ? "activado" : "desactivado"} con éxito.\n\n╰〔 ⚡ ${fytBold("SYSTEM")} 〕⬣`,
+    });
   },
 };

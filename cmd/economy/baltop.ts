@@ -17,7 +17,10 @@ export default {
     const botNumber = botJid.split("@")[0];
     const botId = String(ctx.sock?.subBotId || "").split("@")[0];
     const users = db.getAllUsers();
-    const usersByIdentity = new Map<string, { jid: string; username: string }>();
+    const usersByIdentity = new Map<
+      string,
+      { jid: string; username: string }
+    >();
     for (const user of users) {
       const jid = String(user.jid || "").trim();
       const storedUser = {
@@ -25,8 +28,16 @@ export default {
         username: user.username || (user as any).pushName || "Usuario",
       };
       if (jid) usersByIdentity.set(jid.split("@")[0].split(":")[0], storedUser);
-      if (user.lid) usersByIdentity.set(String(user.lid).split("@")[0].split(":")[0], storedUser);
-      if (user.phone_number) usersByIdentity.set(String(user.phone_number).replace(/\D/g, ""), storedUser);
+      if (user.lid)
+        usersByIdentity.set(
+          String(user.lid).split("@")[0].split(":")[0],
+          storedUser,
+        );
+      if (user.phone_number)
+        usersByIdentity.set(
+          String(user.phone_number).replace(/\D/g, ""),
+          storedUser,
+        );
     }
     const rows = Object.entries(getGroupEconomyUsers(ctx.from))
       .map(([jid, user]: [string, any]) => {
@@ -43,11 +54,14 @@ export default {
       .filter((row) => row.number !== botNumber && row.number !== botId)
       .filter((row) => row.total > 0)
       .sort((a, b) => b.total - a.total);
-    if (!rows.length) return ctx.reply("⚠️ No hay usuarios con saldo para mostrar.");
+    if (!rows.length)
+      return ctx.reply("⚠️ No hay usuarios con saldo para mostrar.");
 
     const totalPages = Math.ceil(rows.length / pageSize);
     if (requestedPage > totalPages) {
-      return ctx.reply(`⚠️ Esa página no existe. Hay ${totalPages} página${totalPages === 1 ? "" : "s"}.`);
+      return ctx.reply(
+        `⚠️ Esa página no existe. Hay ${totalPages} página${totalPages === 1 ? "" : "s"}.`,
+      );
     }
 
     const page = requestedPage;

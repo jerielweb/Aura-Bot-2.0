@@ -1,4 +1,3 @@
-
 import fs from "fs";
 import path from "path";
 import "./config.ts";
@@ -19,21 +18,24 @@ for (const file of fs.readdirSync(TMP_DIR)) {
   }
 }
 
-setInterval(() => {
-  if (!fs.existsSync(TMP_DIR)) return;
-  for (const file of fs.readdirSync(TMP_DIR)) {
-    try {
-      const filePath = path.join(TMP_DIR, file);
-      const stat = fs.statSync(filePath);
-      if (Date.now() - stat.mtimeMs > 3600000) {
-        fs.unlinkSync(filePath);
+setInterval(
+  () => {
+    if (!fs.existsSync(TMP_DIR)) return;
+    for (const file of fs.readdirSync(TMP_DIR)) {
+      try {
+        const filePath = path.join(TMP_DIR, file);
+        const stat = fs.statSync(filePath);
+        if (Date.now() - stat.mtimeMs > 3600000) {
+          fs.unlinkSync(filePath);
+        }
+      } catch {
+        // Ignora entradas no válidas durante la limpieza del caché.
       }
-    } catch {
-      // Ignora entradas no válidas durante la limpieza del caché.
     }
-  }
-  if (global.gc) global.gc();
-}, 6 * 60 * 60 * 1000);
+    if (global.gc) global.gc();
+  },
+  6 * 60 * 60 * 1000,
+);
 
 async function mainBot() {
   await displayBanner();

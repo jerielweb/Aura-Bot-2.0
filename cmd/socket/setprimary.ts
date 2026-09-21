@@ -1,57 +1,82 @@
 import { fytBold } from "../../core/socketText.ts";
 
 function normalize(value: unknown): string {
-	return String(value || "").trim().replace(/:.*(?=@)/, "");
+  return String(value || "")
+    .trim()
+    .replace(/:.*(?=@)/, "");
 }
 
 function getTargetFromMessage(message: any): string | null {
-	const contextInfos = Object.values(message?.message ?? {})
-		.map((value: any) => value?.contextInfo)
-		.filter(Boolean) as any[];
-	const mentioned = contextInfos.flatMap((context) => context.mentionedJid ?? []);
-	const quotedParticipant = contextInfos.find((context) => context.quotedMessage)?.participant;
+  const contextInfos = Object.values(message?.message ?? {})
+    .map((value: any) => value?.contextInfo)
+    .filter(Boolean) as any[];
+  const mentioned = contextInfos.flatMap(
+    (context) => context.mentionedJid ?? [],
+  );
+  const quotedParticipant = contextInfos.find(
+    (context) => context.quotedMessage,
+  )?.participant;
 
-	return mentioned[0] || quotedParticipant || null;
+  return mentioned[0] || quotedParticipant || null;
 }
 
 export default {
-	name: ["setprimary", "delprimary"],
-	description: "Define qué bot responde en este grupo.",
-	category: "socket",
-	groupOnly: true,
-	adminOnly: true,
+  name: ["setprimary", "delprimary"],
+  description: "Define qué bot responde en este grupo.",
+  category: "socket",
+  groupOnly: true,
+  adminOnly: true,
 
-	async run({ args, cmdName, db, from, msg, reply, sock, botJid }: any) {
-		const requestedBot = normalize(getTargetFromMessage(msg) || args[0] || "");
+  async run({ args, cmdName, db, from, msg, reply, sock, botJid }: any) {
+    const requestedBot = normalize(getTargetFromMessage(msg) || args[0] || "");
 
-		if (cmdName === "delprimary") {
-			if (requestedBot) {
-				const targetBot = db.getBotById?.(requestedBot);
-				if (!targetBot) return reply({ text: "No encontré el bot mencionado o citado en la base de datos." });
-				const currentPrimary = normalize(db.getPrimary(from));
-				if (currentPrimary && normalize(targetBot.bot_id) !== currentPrimary) {
-					return reply({ text: "Ese bot no es el primario actual de este grupo." });
-				}
-			}
+    if (cmdName === "delprimary") {
+      if (requestedBot) {
+        const targetBot = db.getBotById?.(requestedBot);
+        if (!targetBot)
+          return reply({
+            text: "No encontré el bot mencionado o citado en la base de datos.",
+          });
+        const currentPrimary = normalize(db.getPrimary(from));
+        if (currentPrimary && normalize(targetBot.bot_id) !== currentPrimary) {
+          return reply({
+            text: "Ese bot no es el primario actual de este grupo.",
+          });
+        }
+      }
 
-			db.setPrimary(from, "");
-			return reply({ text: `✅ ${fytBold("Bot primario eliminado")}. Todos los bots podrán responder.` });
-		}
+      db.setPrimary(from, "");
+      return reply({
+        text: `✅ ${fytBold("Bot primario eliminado")}. Todos los bots podrán responder.`,
+      });
+    }
 
-		const currentBot = normalize(sock.subBotId || db.getBot(botJid)?.bot_id || botJid);
-		const selectedBot = requestedBot ? db.getBotById?.(requestedBot) : db.getBot(botJid);
-		if (requestedBot && !selectedBot) {
-			return reply({ text: "No encontré ese bot. Usa su bot_id completo, por ejemplo: 123456@lid" });
-		}
-		if (selectedBot?.status !== "active") {
-			return reply({ text: "Ese bot no está activo actualmente y no puede ser el primario." });
-		}
-		const targetBot = selectedBot?.bot_id || currentBot;
-		if (!targetBot) {
-			return reply({ text: "No encontré ese bot. Usa su bot_id completo, por ejemplo: 123456@lid" });
-		}
+    const currentBot = normalize(
+      sock.subBotId || db.getBot(botJid)?.bot_id || botJid,
+    );
+    const selectedBot = requestedBot
+      ? db.getBotById?.(requestedBot)
+      : db.getBot(botJid);
+    if (requestedBot && !selectedBot) {
+      return reply({
+        text: "No encontré ese bot. Usa su bot_id completo, por ejemplo: 123456@lid",
+      });
+    }
+    if (selectedBot?.status !== "active") {
+      return reply({
+        text: "Ese bot no está activo actualmente y no puede ser el primario.",
+      });
+    }
+    const targetBot = selectedBot?.bot_id || currentBot;
+    if (!targetBot) {
+      return reply({
+        text: "No encontré ese bot. Usa su bot_id completo, por ejemplo: 123456@lid",
+      });
+    }
 
-		db.setPrimary(from, targetBot);
-		return reply({ text: `✅ ${fytBold("Bot primario configurado")}: ${targetBot}` });
-	},
+    db.setPrimary(from, targetBot);
+    return reply({
+      text: `✅ ${fytBold("Bot primario configurado")}: ${targetBot}`,
+    });
+  },
 };

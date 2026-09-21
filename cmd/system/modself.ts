@@ -11,6 +11,8 @@ export default {
 
     const enabled = ["on", "true", "1"].includes(value);
     ctx.db.setBot(ctx.botJid, { modSelf: enabled ? 1 : 0 });
-    return ctx.reply(`✅ Modo self de moderación ${enabled ? "activado" : "desactivado"}.`);
+    return ctx.reply(
+      `✅ Modo self de moderación ${enabled ? "activado" : "desactivado"}.`,
+    );
   },
 };

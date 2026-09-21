@@ -53,7 +53,11 @@ export function formTime(ms: number): string {
   return `${s}s`;
 }
 
-export function checkCooldown(groupJid: string, userJid: string, key: keyof CooldownRows) {
+export function checkCooldown(
+  groupJid: string,
+  userJid: string,
+  key: keyof CooldownRows,
+) {
   const user = getEconomyUser(groupJid, userJid);
   const lastKey = `last${key.charAt(0).toUpperCase()}${key.slice(1)}`;
   const last = Number(user[lastKey] ?? 0);
@@ -71,7 +75,11 @@ export function checkCooldown(groupJid: string, userJid: string, key: keyof Cool
   return { ready: true };
 }
 
-export function setCooldown(groupJid: string, userJid: string, key: keyof CooldownRows) {
+export function setCooldown(
+  groupJid: string,
+  userJid: string,
+  key: keyof CooldownRows,
+) {
   const lastKey = `last${key.charAt(0).toUpperCase()}${key.slice(1)}`;
   setEconomyUser(groupJid, userJid, { [lastKey]: Date.now() });
 }
@@ -94,9 +102,20 @@ export function addAura(jid: string, amount: number) {
   return aura;
 }
 
-export function transferBolsillo(groupJid: string, from: string, to: string, amount: number): boolean {
+export function transferBolsillo(
+  groupJid: string,
+  from: string,
+  to: string,
+  amount: number,
+): boolean {
   const value = Math.floor(Number(amount));
-  if (!Number.isFinite(value) || value <= 0 || from === to || getBolsillo(groupJid, from) < value) return false;
+  if (
+    !Number.isFinite(value) ||
+    value <= 0 ||
+    from === to ||
+    getBolsillo(groupJid, from) < value
+  )
+    return false;
 
   addBolsillo(groupJid, from, -value);
   addBolsillo(groupJid, to, value);
@@ -106,24 +125,38 @@ export function transferBolsillo(groupJid: string, from: string, to: string, amo
 function getEconomyStore(groupJid: string): Record<string, EconomyUser> {
   const group = db.getGroup(groupJid) as Record<string, any>;
   if (!group.economy || typeof group.economy !== "object") group.economy = {};
-  if (!group.economy.users || typeof group.economy.users !== "object") group.economy.users = {};
+  if (!group.economy.users || typeof group.economy.users !== "object")
+    group.economy.users = {};
   return group.economy.users;
 }
 
-export function getEconomyUser(groupJid: string, userJid: string, defaults: EconomyUser = {}): EconomyUser {
+export function getEconomyUser(
+  groupJid: string,
+  userJid: string,
+  defaults: EconomyUser = {},
+): EconomyUser {
   const users = getEconomyStore(groupJid);
   return { ...DEFAULT_ECONOMY_USER, ...defaults, ...(users[userJid] ?? {}) };
 }
 
-export function setEconomyUser(groupJid: string, userJid: string, data: EconomyUser): EconomyUser {
+export function setEconomyUser(
+  groupJid: string,
+  userJid: string,
+  data: EconomyUser,
+): EconomyUser {
   const group = db.getGroup(groupJid) as Record<string, any>;
   const users = getEconomyStore(groupJid);
   users[userJid] = { ...getEconomyUser(groupJid, userJid), ...data };
-  db.setGroup(groupJid, { ...group, economy: { ...(group.economy ?? {}), users } });
+  db.setGroup(groupJid, {
+    ...group,
+    economy: { ...(group.economy ?? {}), users },
+  });
   return users[userJid];
 }
 
-export function getGroupEconomyUsers(groupJid: string): Record<string, EconomyUser> {
+export function getGroupEconomyUsers(
+  groupJid: string,
+): Record<string, EconomyUser> {
   return getEconomyStore(groupJid);
 }
 

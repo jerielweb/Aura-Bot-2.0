@@ -15,7 +15,8 @@ export default {
     const botJid = String(ctx.sock?.user?.id || "").split(":")[0];
     const botNumber = botJid.split("@")[0];
     const botId = String(ctx.sock?.subBotId || "").split("@")[0];
-    const rows = db.getAllUsers()
+    const rows = db
+      .getAllUsers()
       .filter((user) => {
         const jid = String(user.jid || "").trim();
         if (!jid || jid.endsWith("@lid")) return false;
@@ -27,13 +28,18 @@ export default {
         username: user.username || (user as any).pushName || "Usuario",
         profile: getProfile(user.jid),
       }))
-      .sort((a, b) => Number(b.profile.aura ?? 0) - Number(a.profile.aura ?? 0));
+      .sort(
+        (a, b) => Number(b.profile.aura ?? 0) - Number(a.profile.aura ?? 0),
+      );
 
-    if (!rows.length) return ctx.reply("⚠️ No hay usuarios registrados para mostrar.");
+    if (!rows.length)
+      return ctx.reply("⚠️ No hay usuarios registrados para mostrar.");
 
     const totalPages = Math.ceil(rows.length / pageSize);
     if (requestedPage > totalPages) {
-      return ctx.reply(`⚠️ Esa página no existe. Hay ${totalPages} página${totalPages === 1 ? "" : "s"}.`);
+      return ctx.reply(
+        `⚠️ Esa página no existe. Hay ${totalPages} página${totalPages === 1 ? "" : "s"}.`,
+      );
     }
 
     const page = requestedPage;

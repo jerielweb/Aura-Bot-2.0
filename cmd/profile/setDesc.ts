@@ -1,5 +1,5 @@
 import { updateProfile } from "../../core/profileConfig.ts";
-import {fytBold} from "./../../core/socketText.ts"
+import { fytBold } from "./../../core/socketText.ts";
 export default {
   name: ["setdesc", "descripcion", "bio"],
   description: "Cambia tu descripción.",

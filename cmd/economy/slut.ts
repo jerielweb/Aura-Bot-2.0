@@ -8,6 +8,13 @@ export default createEconomyActivity({
   cooldown: 60 * 60 * 1000,
   reward: [1000, 6000],
   xp: [15, 40],
-  success: ["Bailaste en un club VIP y ganaste", "Trabajaste en un evento privado y cobraste", "Vendiste fotos y conseguiste"],
-  fail: ["El cliente huyó sin pagar.", "La policía hizo una redada y tuviste que escapar."],
+  success: [
+    "Bailaste en un club VIP y ganaste",
+    "Trabajaste en un evento privado y cobraste",
+    "Vendiste fotos y conseguiste",
+  ],
+  fail: [
+    "El cliente huyó sin pagar.",
+    "La policía hizo una redada y tuviste que escapar.",
+  ],
 });

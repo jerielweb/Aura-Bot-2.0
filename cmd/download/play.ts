@@ -11,18 +11,20 @@ function getYouTubeVideoId(value: string): string | null {
 
   let parsed: URL;
   try {
-    parsed = new URL(/^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`);
+    parsed = new URL(
+      /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`,
+    );
   } catch {
     return null;
   }
 
   const hostname = parsed.hostname.toLowerCase().replace(/^www\./, "");
-  if (![
-    "youtube.com",
-    "m.youtube.com",
-    "music.youtube.com",
-    "youtu.be",
-  ].includes(hostname)) return null;
+  if (
+    !["youtube.com", "m.youtube.com", "music.youtube.com", "youtu.be"].includes(
+      hostname,
+    )
+  )
+    return null;
 
   let videoId = "";
   if (hostname === "youtu.be") {
@@ -40,9 +42,10 @@ function getYouTubeVideoId(value: string): string | null {
 }
 
 function isYouTubeUrl(value: string): boolean {
-  return /^(?:https?:\/\/)?(?:www\.)?(?:m\.|music\.)?(?:youtube\.com|youtu\.be)\//i.test(value.trim());
+  return /^(?:https?:\/\/)?(?:www\.)?(?:m\.|music\.)?(?:youtube\.com|youtu\.be)\//i.test(
+    value.trim(),
+  );
 }
-
 
 async function queryYouTubeAudio(query: string): Promise<any> {
   const queryUrl = `${BASE_URL}/search/yt?query=${encodeURIComponent(query)}&key=${API_KEY}`;
@@ -57,7 +60,11 @@ async function queryYouTubeAudio(query: string): Promise<any> {
   }
 
   const data: any = await response.body.json();
-  if (data?.status !== true || !Array.isArray(data.result) || !data.result.length) {
+  if (
+    data?.status !== true ||
+    !Array.isArray(data.result) ||
+    !data.result.length
+  ) {
     throw new Error("No se encontraron resultados en YouTube.");
   }
 
@@ -116,7 +123,10 @@ export default {
   category: "download",
   async run({ args, reply, react }: any) {
     const query = args.join(" ").trim();
-    if (!query) return reply("⚠️ Escribe el nombre de una canción o pega un enlace de YouTube.");
+    if (!query)
+      return reply(
+        "⚠️ Escribe el nombre de una canción o pega un enlace de YouTube.",
+      );
 
     await react("🎵");
     try {
@@ -138,8 +148,12 @@ export default {
       const duration = audio.duration || result.duration || "??";
       const views = result.views || "0";
       const quality = audio.quality || "128k";
-      const videoId = String(audio.videoId || getYouTubeVideoId(finalUrl) || "").trim();
-      const youtubeUrl = videoId ? `https://youtu.be/${videoId}` : result.url || finalUrl;
+      const videoId = String(
+        audio.videoId || getYouTubeVideoId(finalUrl) || "",
+      ).trim();
+      const youtubeUrl = videoId
+        ? `https://youtu.be/${videoId}`
+        : result.url || finalUrl;
 
       let caption = `╭〔 🎵 ${fytBold("YOUTUBE PLAY")} 〕━⬣\n\n`;
       caption += `┃ ➥ ${fytBold(title)}\n\n`;
@@ -154,7 +168,7 @@ export default {
       caption += `╰━━〔 ⚡ ${fytBold("SYSTEM ACTIVE")} 〕━━⬣`;
 
       const thumbnail = videoId
-        ? (audio.thumbnail || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`)
+        ? audio.thumbnail || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
         : audio.thumbnail || result.banner;
       if (thumbnail) {
         await reply({ image: { url: thumbnail }, caption });
@@ -170,7 +184,9 @@ export default {
       });
     } catch (error: any) {
       await react("❌");
-      return reply({ text: `❌ Error: ${error?.message || "No se pudo descargar el audio."}` });
+      return reply({
+        text: `❌ Error: ${error?.message || "No se pudo descargar el audio."}`,
+      });
     }
   },
 };

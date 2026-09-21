@@ -8,6 +8,13 @@ export default createEconomyActivity({
   cooldown: 2 * 60 * 60 * 1000,
   reward: [10000, 20000],
   xp: [40, 80],
-  success: ["Completaste una misión en las Ruinas Olvidadas y ganaste", "Derrotaste a un grupo de duendes y saqueaste", "Protegiste una caravana y te pagaron"],
-  fail: ["Caíste en una trampa de la mazmorra y tuviste que retirarte.", "El jefe de la zona te obligó a realizar una retirada táctica."],
+  success: [
+    "Completaste una misión en las Ruinas Olvidadas y ganaste",
+    "Derrotaste a un grupo de duendes y saqueaste",
+    "Protegiste una caravana y te pagaron",
+  ],
+  fail: [
+    "Caíste en una trampa de la mazmorra y tuviste que retirarte.",
+    "El jefe de la zona te obligó a realizar una retirada táctica.",
+  ],
 });

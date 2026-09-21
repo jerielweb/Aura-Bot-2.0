@@ -1,10 +1,10 @@
-import os from 'os';
-import path from 'path';
-import fs from 'fs';
+import os from "os";
+import path from "path";
+import fs from "fs";
 
 export function setupCustomTmp(): string {
-  const customTmpDir = process.env.GLOBAL_CUSTOM_TMP
-    || path.join(process.cwd(), './cache');
+  const customTmpDir =
+    process.env.GLOBAL_CUSTOM_TMP || path.join(process.cwd(), "./cache");
 
   if (!fs.existsSync(customTmpDir)) {
     fs.mkdirSync(customTmpDir, { recursive: true });
@@ -20,7 +20,6 @@ export function setupCustomTmp(): string {
 }
 
 setupCustomTmp();
-
 
 // Configuracion de las apis externas
 export const DL_CONFIG = {
@@ -43,9 +42,8 @@ export const DL_CONFIG = {
   nekosApi: {
     BASE_URL: "https://nekos.best/api/v2",
     API_KEY: null,
-  }
+  },
 };
-
 
 // Configuracion de fabrica de los bots
 globalThis.DEFAULT_PREFIXES = [".", "#", "/", "!", "-", "%", "$"];
@@ -59,9 +57,9 @@ globalThis.DEFAULT_USER_ROLES = [
   {
     lid: "5163322441896@lid",
     role: "owner",
-    jid: "50672373785@s.whatsapp.net"
-  }
-]
+    jid: "50672373785@s.whatsapp.net",
+  },
+];
 
 // Directorio de sesiones de bots
 globalThis.mainBotSession = "./sessions";
@@ -69,4 +67,3 @@ globalThis.subBotSession = "./sessions/subs";
 globalThis.DATA_BASE_DIR = "./database";
 
 globalThis.mainSocket = null;
-

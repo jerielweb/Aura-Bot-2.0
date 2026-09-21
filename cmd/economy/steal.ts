@@ -1,5 +1,10 @@
 import { cooldownText } from "../../core/economyConfig.ts";
-import { economyTarget, economyUser, formatCoins, saveEconomy } from "../../core/economyRuntime.ts";
+import {
+  economyTarget,
+  economyUser,
+  formatCoins,
+  saveEconomy,
+} from "../../core/economyRuntime.ts";
 
 export default {
   name: ["steal", "robar"],
@@ -8,13 +13,20 @@ export default {
   groupOnly: true,
   async run(ctx: any) {
     const target = await economyTarget(ctx);
-    if (target === ctx.sender) return ctx.reply("🧠 No puedes robarte a ti mismo.");
+    if (target === ctx.sender)
+      return ctx.reply("🧠 No puedes robarte a ti mismo.");
     const thief = economyUser(ctx);
     const victim = economyUser(ctx, target);
     const now = Date.now();
     const cooldown = 60 * 60 * 1000;
-    if (thief.lastSteal && now - thief.lastSteal < cooldown) return ctx.reply(`⏳ Espera *${cooldownText(cooldown - (now - thief.lastSteal))}* para volver a intentarlo.`);
-    if (victim.bolsillo < 500) return ctx.reply("🪵 La cartera de este usuario está vacía o tiene menos de ₡500.");
+    if (thief.lastSteal && now - thief.lastSteal < cooldown)
+      return ctx.reply(
+        `⏳ Espera *${cooldownText(cooldown - (now - thief.lastSteal))}* para volver a intentarlo.`,
+      );
+    if (victim.bolsillo < 500)
+      return ctx.reply(
+        "🪵 La cartera de este usuario está vacía o tiene menos de ₡500.",
+      );
     thief.lastSteal = now;
     const success = Math.random() <= 0.4;
     let text = `╭〔 👤 𝐀𝐔𝐑𝐀 𝐑𝐄𝐄𝐃 〕⬣\n┃ 𝐒𝐈𝐒𝐓𝐄𝐌𝐀 𝐃𝐄 𝐀𝐒𝐀𝐋𝐓𝐎𝐒\n╰━━━━━━━━━━━━⬣\n\n`;

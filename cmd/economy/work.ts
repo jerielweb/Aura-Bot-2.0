@@ -8,6 +8,13 @@ export default createEconomyActivity({
   cooldown: 3 * 60 * 1000,
   reward: [5000, 7000],
   xp: [10, 30],
-  success: ["Trabajaste como programador y ganaste", "Vendiste limonada y ganaste", "Hiciste trabajos freelance y cobraste"],
-  fail: ["Tu jornada fue agotadora, pero no encontraste clientes.", "El turno terminó sin propinas."],
+  success: [
+    "Trabajaste como programador y ganaste",
+    "Vendiste limonada y ganaste",
+    "Hiciste trabajos freelance y cobraste",
+  ],
+  fail: [
+    "Tu jornada fue agotadora, pero no encontraste clientes.",
+    "El turno terminó sin propinas.",
+  ],
 });

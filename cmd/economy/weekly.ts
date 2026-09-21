@@ -1,4 +1,9 @@
-import { cooldownText, formatCoins, getEconomyUser, setEconomyUser } from "../../core/economyConfig.ts";
+import {
+  cooldownText,
+  formatCoins,
+  getEconomyUser,
+  setEconomyUser,
+} from "../../core/economyConfig.ts";
 import { fytBold } from "../../core/socketText.ts";
 
 export default {
@@ -6,18 +11,24 @@ export default {
   category: "economy",
   description: "Reclama tu recompensa semanal con sistema de racha.",
   async run(ctx: any) {
-    const user = getEconomyUser(ctx.from, ctx.sender, { lastWeekly: 0, weeklyStreak: 0 });
+    const user = getEconomyUser(ctx.from, ctx.sender, {
+      lastWeekly: 0,
+      weeklyStreak: 0,
+    });
     const now = Date.now();
     const cooldown = 7 * 24 * 60 * 60 * 1000;
     const gracePeriod = 11 * 24 * 60 * 60 * 1000;
 
     if (user.lastWeekly && now - user.lastWeekly < cooldown) {
-      return ctx.reply(`⏳ Ya reclamaste tu recompensa semanal.\nVuelve en *${cooldownText(cooldown - (now - user.lastWeekly))}*.`);
+      return ctx.reply(
+        `⏳ Ya reclamaste tu recompensa semanal.\nVuelve en *${cooldownText(cooldown - (now - user.lastWeekly))}*.`,
+      );
     }
 
-    user.weeklyStreak = user.lastWeekly && now - user.lastWeekly > gracePeriod
-      ? 1
-      : (user.weeklyStreak || 0) + 1;
+    user.weeklyStreak =
+      user.lastWeekly && now - user.lastWeekly > gracePeriod
+        ? 1
+        : (user.weeklyStreak || 0) + 1;
     const baseReward = (Math.floor(Math.random() * 2000) + 3000) * 3;
     const streakBonus = Math.min(user.weeklyStreak - 1, 8) * 1500;
     const totalReward = baseReward + streakBonus;

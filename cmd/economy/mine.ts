@@ -8,6 +8,13 @@ export default createEconomyActivity({
   cooldown: 30 * 60 * 1000,
   reward: [5000, 10000],
   xp: [20, 50],
-  success: ["Encontraste oro en una veta profunda y lo vendiste por", "Rompiste una geoda y encontraste gemas por", "Descubriste un cofre antiguo con"],
-  fail: ["Se rompió tu pico y tuviste que volver al campamento.", "Un derrumbe bloqueó la veta."],
+  success: [
+    "Encontraste oro en una veta profunda y lo vendiste por",
+    "Rompiste una geoda y encontraste gemas por",
+    "Descubriste un cofre antiguo con",
+  ],
+  fail: [
+    "Se rompió tu pico y tuviste que volver al campamento.",
+    "Un derrumbe bloqueó la veta.",
+  ],
 });

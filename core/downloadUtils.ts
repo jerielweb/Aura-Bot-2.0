@@ -17,7 +17,10 @@ export async function requestJson(url: string, timeout = 30000): Promise<any> {
   return response.json();
 }
 
-export async function downloadBuffer(url: string, timeout = 120000): Promise<Buffer> {
+export async function downloadBuffer(
+  url: string,
+  timeout = 120000,
+): Promise<Buffer> {
   const response = await fetch(url, {
     headers: HEADERS,
     signal: AbortSignal.timeout(timeout),
@@ -30,7 +33,12 @@ export async function downloadBuffer(url: string, timeout = 120000): Promise<Buf
 }
 
 export function safeFileName(value: unknown, fallback: string): string {
-  return String(value || fallback).replace(/[<>:"/\\|?*\r\n]/g, "").trim().slice(0, 100) || fallback;
+  return (
+    String(value || fallback)
+      .replace(/[<>:"/\\|?*\r\n]/g, "")
+      .trim()
+      .slice(0, 100) || fallback
+  );
 }
 
 export function pickSearchResult(results: unknown, query: string): any | null {
@@ -43,19 +51,31 @@ export function pickSearchResult(results: unknown, query: string): any | null {
     .split(/\s+/)
     .filter(Boolean);
 
-  return results
-    .filter((result: any) => result?.url)
-    .map((result: any, index: number) => {
-      const searchable = [result.title, result.desc, result.description, result.author?.nickname]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "");
-      const score = terms.reduce((total, term) => total + (searchable.includes(term) ? 1 : 0), 0);
-      return { result, index, score };
-    })
-    .sort((left, right) => right.score - left.score || left.index - right.index)[0]?.result || null;
+  return (
+    results
+      .filter((result: any) => result?.url)
+      .map((result: any, index: number) => {
+        const searchable = [
+          result.title,
+          result.desc,
+          result.description,
+          result.author?.nickname,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+        const score = terms.reduce(
+          (total, term) => total + (searchable.includes(term) ? 1 : 0),
+          0,
+        );
+        return { result, index, score };
+      })
+      .sort(
+        (left, right) => right.score - left.score || left.index - right.index,
+      )[0]?.result || null
+  );
 }
 
 export function formatCount(value: unknown): string {

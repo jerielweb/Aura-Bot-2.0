@@ -1,4 +1,8 @@
-import { cooldownText, formatCoins, getEconomyUser } from "../../core/economyConfig.ts";
+import {
+  cooldownText,
+  formatCoins,
+  getEconomyUser,
+} from "../../core/economyConfig.ts";
 import { fytBold } from "../../core/socketText.ts";
 
 export default {
@@ -22,7 +26,9 @@ export default {
         hours > 0 ? `${hours}h` : "",
         minutes > 0 ? `${minutes}m` : "",
         `${seconds}s`,
-      ].filter(Boolean).join(" ");
+      ]
+        .filter(Boolean)
+        .join(" ");
 
       return `⏳ _${time || cooldownText(remaining)}_`;
     };
