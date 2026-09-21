@@ -23,7 +23,7 @@ export default {
       if (!url) throw new Error("No se encontró ningún enlace válido.");
       const data = await requestJson(`${API}/dl/tiktokv2?url=${encodeURIComponent(url)}&key=${KEY}`, 60000);
       const entries = Array.isArray(data?.data) ? data.data : [];
-      const videoUrl = entries.find((item: any) => item?.url)?.url;
+      const videoUrl = entries.find((item: any) => item?.type === "nowatermark_hd")?.url || entries.find((item: any) => item?.url)?.url;
       if (!data?.status || !videoUrl) throw new Error("La API no devolvió un video descargable.");
       const author = data.author?.nickname || data.author?.fullname || "Desconocido";
       const title = data.title || "Video de TikTok";
