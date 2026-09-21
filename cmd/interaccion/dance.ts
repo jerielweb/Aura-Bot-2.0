@@ -53,9 +53,8 @@ export default {
 				mentions = [sender, targetJid];
 			} else {
 				caption = `\`${senderName}\` ${fytBold("quiere bailar")} 💃🕺`;
-			}
+			} 
 
-			await react("✅");
 			await reply({
 				video: { url: data.result },
 				caption,
