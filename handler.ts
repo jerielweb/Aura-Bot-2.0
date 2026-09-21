@@ -563,10 +563,6 @@ export async function handleMessage(
     const isMod = isOwner || isCoOwner || runtimeDb.hasRole(sender, "mod");
     const isPremium = isMod || runtimeDb.hasRole(senderNum, "premium");
 
-    if (Number(botRecord.modSelf ?? 0) === 1 && !isBotUser && !isMod) {
-      return;
-    }
-
     if (isModPrefixCommand && !isMod && !isBotUser) return;
 
     let isAdmin = false;
@@ -617,6 +613,11 @@ export async function handleMessage(
 
     if (isGroup) {
       const groupData = runtimeDb.getGroup(from);
+
+      const modSelfEnabled = Number(botRecord.modSelf ?? 0) === 1;
+      if (modSelfEnabled && groupData?.self !== 0 && !isBotUser && !isMod) {
+        return;
+      }
 
       const isUnbanCommand = [
         "unbanchat",
