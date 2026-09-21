@@ -3,7 +3,7 @@ import { DL_CONFIG } from "../../config.ts";
 import { request } from "undici";
 
 export default {
-        name: ["slapall",
+        name: ["slapall", "bofetadas"],
         description: "Envía una reacción de bofetada.",
         category: "interaction",
 
@@ -49,7 +49,7 @@ export default {
                         if (targetJid) {
                                 const targetUser = db.getUser(targetJid);
                                 const targetName = targetUser?.pushName || targetUser?.username || targetJid.split("@")[0];
-                                caption = `\`${senderName}\` ${fytBold("abofeteó a todos con ")} \`${targetName}\` 💥`;
+                                caption = `\`${senderName}\` ${fytBold("abofeteó a todos con")} \`${targetName}\` 💥`;
                                 mentions = [sender, targetJid];
                         } else {
                                 caption = `\`${senderName}\` ${fytBold("abofeteo a todos")} 💥`;
