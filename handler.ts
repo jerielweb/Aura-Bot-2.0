@@ -2,7 +2,7 @@ import chalk from "chalk";
 import { LRUCache } from "lru-cache";
 import { jidNormalizedUser } from "@whiskeysockets/baileys";
 import { cmdLog } from "./core/logger.ts";
-import { NOT_CMD_FOUND, ERROR_CMD, NOT_BOT_ADMIN, NOT_BOT_USER, NOT_PRIVATE, NOT_OWNER, NOT_GROUP, NOT_ADMIN, NOT_MOD, NOT_PREMIUM } from "./core/socketText.ts";
+import { fytBold, NOT_CMD_FOUND, ERROR_CMD, NOT_BOT_ADMIN, NOT_BOT_USER, NOT_PRIVATE, NOT_OWNER, NOT_GROUP, NOT_ADMIN, NOT_MOD, NOT_PREMIUM } from "./core/socketText.ts";
 import {db} from "./dbController/db.ts";
 import { handleGroupStatus, handleGroupToxic } from "./core/groupModeration.ts";
 
@@ -645,7 +645,18 @@ export async function handleMessage(
           logger.warn?.(`[${botLabel}] react falló: ${e.message} | from: ${from}`);
         }
       },
+      getPluginCategories: () => [...new Set([...pluginMap.values()]
+        .map((item: any) => String(item?.category ?? "").trim())
+        .filter(Boolean))],
     };
+
+    const disabledCategories = isGroup ? runtimeDb.getGroup(from)?.catBlocked : [];
+    const pluginCategory = String(plugin.category ?? "").trim().toLowerCase();
+    const isCatalogManager = ["disable", "enable"].includes(cmdName);
+    if (pluginCategory && !isCatalogManager && Array.isArray(disabledCategories)
+      && disabledCategories.some((category: string) => String(category).toLowerCase() === pluginCategory)) {
+      return ctx.reply({ text: `❌ El catálogo ${fytBold(pluginCategory)} está desactivado para este grupo.` });
+    }
 
     if (plugin.ownerOnly && !isOwner) return ctx.reply({ text: NOT_OWNER() });
     if (plugin.modOnly && !isMod) return ctx.reply({ text: NOT_MOD() });

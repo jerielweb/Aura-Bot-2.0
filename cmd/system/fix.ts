@@ -31,7 +31,7 @@ export default {
 			text += `┃ ${alreadyUpdated ? "✨" : "🚀"} ${fytBold(alreadyUpdated ? "SISTEMA ACTUALIZADO" : "UPDATE COMPLETO")}\n`;
 			text += "╰━━━━━━━━━━━━⬣\n\n";
 			text += alreadyUpdated
-				? "┃ > El bot ya tiene los últimos cambios.\n"
+				? "┃ > El bot ya esta actualizado.\n"
 				: "┃ > Cambios descargados correctamente.\n┃ > Reinicia el bot para aplicarlos.\n";
 			text += `\n┣ 📝 ${fytBold("SALIDA DE GIT")}\n`;
 			text += `\`\`\`\n${output || "Sin salida de Git."}\n\`\`\`\n\n`;

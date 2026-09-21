@@ -38,6 +38,7 @@ db_instance.exec(`
     onlyAdmin INTEGER DEFAULT 0,
     prefix TEXT DEFAULT NULL,
     topMsgUsers TEXT DEFAULT '[]',
+    catBlocked TEXT DEFAULT '["nsfw"]',
     data TEXT DEFAULT '{}'
   );
 
@@ -72,6 +73,7 @@ for (const [table, column, definition] of [
   ["groups", "self", "INTEGER DEFAULT 0"],
   ["groups", "onlyAdmin", "INTEGER DEFAULT 0"],
   ["groups", "topMsgUsers", "TEXT DEFAULT '[]'"],
+  ["groups", "catBlocked", "TEXT DEFAULT '[\"nsfw\"]'"],
   ["bots", "modPrefix", "TEXT"],
   ["bots", "modSelf", "INTEGER DEFAULT 0"],
 ] as const) {
@@ -99,10 +101,10 @@ const stmts = {
 
   getGroup: db_instance.prepare("SELECT * FROM groups WHERE jid = ?"),
   insertGroup: db_instance.prepare(
-    "INSERT INTO groups (jid, group_id, group_name, antilink, antiCalls, antiToxic, antiSpam, antiStatus, onlyAdmin, prefix, self, topMsgUsers, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "INSERT INTO groups (jid, group_id, group_name, antilink, antiCalls, antiToxic, antiSpam, antiStatus, onlyAdmin, prefix, self, topMsgUsers, catBlocked, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
   ),
   updateGroup: db_instance.prepare(
-    "UPDATE groups SET group_id = ?, group_name = ?, antilink = ?, antiCalls = ?, antiToxic = ?, antiSpam = ?, antiStatus = ?, onlyAdmin = ?, prefix = ?, self = ?, topMsgUsers = ?, data = ? WHERE jid = ?",
+    "UPDATE groups SET group_id = ?, group_name = ?, antilink = ?, antiCalls = ?, antiToxic = ?, antiSpam = ?, antiStatus = ?, onlyAdmin = ?, prefix = ?, self = ?, topMsgUsers = ?, catBlocked = ?, data = ? WHERE jid = ?",
   ),
   getAllGroups: db_instance.prepare("SELECT jid, group_id, group_name, antilink, antiCalls, antiToxic, antiSpam, onlyAdmin, prefix, self, topMsgUsers, data FROM groups"),
 
@@ -231,6 +233,7 @@ function getGroup(jid: string) {
       onlyAdmin: 0,
       prefix: null,
       self: 0,
+      catBlocked: ["nsfw"],
       privateMode: false,
       adminMode: false,
       primaryBot: null,
@@ -255,6 +258,7 @@ function getGroup(jid: string) {
       defaultGroup.prefix,
       defaultGroup.self,
       JSON.stringify(defaultGroup.topMsgUsers),
+      JSON.stringify(defaultGroup.catBlocked),
       JSON.stringify(defaultGroup.data),
     );
 
@@ -281,6 +285,7 @@ function getGroup(jid: string) {
     onlyAdmin: Number(row.onlyAdmin ?? jsonData.onlyAdmin ?? 0),
     prefix: row.prefix ?? jsonData.prefix ?? null,
     self: Number(row.self ?? jsonData.self ?? 0),
+    catBlocked: safeJsonArray(row.catBlocked ?? jsonData.catBlocked ?? '["nsfw"]'),
     privateMode: Boolean(row.privateMode ?? jsonData.privateMode ?? false),
     adminMode: Boolean(row.adminMode ?? jsonData.adminMode ?? false),
     primaryBot: row.primaryBot ?? jsonData.primaryBot ?? null,
@@ -432,6 +437,7 @@ export const db = {
         merged.prefix ?? null,
         Number(Boolean(merged.self ?? 0)),
         JSON.stringify(Array.isArray(merged.topMsgUsers) ? merged.topMsgUsers : []),
+        JSON.stringify(Array.isArray(merged.catBlocked) ? merged.catBlocked : ["nsfw"]),
         JSON.stringify(payload),
       );
       return;
@@ -449,6 +455,7 @@ export const db = {
       merged.prefix !== undefined ? merged.prefix : (row.prefix ?? null),
       Number(Boolean(merged.self ?? row.self ?? 0)),
       JSON.stringify(Array.isArray(merged.topMsgUsers) ? merged.topMsgUsers : safeJson<Record<string, any>[]>(row.topMsgUsers)),
+      JSON.stringify(Array.isArray(merged.catBlocked) ? merged.catBlocked : safeJsonArray(row.catBlocked ?? '["nsfw"]')),
       JSON.stringify(payload),
       key,
     );

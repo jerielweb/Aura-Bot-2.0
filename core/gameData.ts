@@ -1,4 +1,4 @@
-export const HANGMAN_WORDS: string = [
+export const HANGMAN_WORDS: string[] = [
   // Programación y Tecnología
   "javascript",
   "programacion",
