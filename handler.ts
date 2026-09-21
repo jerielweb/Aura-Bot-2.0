@@ -615,9 +615,7 @@ export async function handleMessage(
       const groupData = runtimeDb.getGroup(from);
 
       const modSelfEnabled = Number(botRecord.modSelf ?? 0) === 1;
-      if (modSelfEnabled && groupData?.self !== 0 && !isBotUser && !isMod) {
-        return;
-      }
+      if (modSelfEnabled && !isBotUser && !isMod) return;
 
       const isUnbanCommand = [
         "unbanchat",
