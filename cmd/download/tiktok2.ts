@@ -7,7 +7,7 @@ const KEY = DL_CONFIG.alya.API_KEY;
 const TIKTOK_URL = /^(?:https?:\/\/)?(?:www\.|vm\.|vt\.)?tiktok\.com\//i;
 
 export default {
-  name: ["tk", "tt", "ttv", "tiktok", "tkmp4"],
+  name: ["dtk", "dtt", "dttv", "doctiktok", "dtkmp4"],
   category: "download",
   description: "Busca y descarga videos de TikTok como documento.",
   async run({ args, reply, react }: any) {
@@ -27,7 +27,7 @@ export default {
       if (!data?.status || !videoUrl) throw new Error("La API no devolvió un video descargable.");
       const author = data.author?.nickname || data.author?.fullname || "Desconocido";
       const title = data.title || "Video de TikTok";
-      const caption = `╭〔 🎥 ${fytBold("TIKTOK VIDEO")} 〕━⬣\n\n┃ ➥ ${fytBold(title)}\n\n┣━━━━━━━━━━━━⬣\n┃ > ${fytBold("Autor")} › ${author}\n┃ > ${fytBold("Vistas")} › ${formatCount(data.stats?.views || data.play_count)}\n┃ > ${fytBold("Likes")} › ${formatCount(data.stats?.likes || data.digg_count)}\n┃ > ${fytBold("Comentarios")} › ${formatCount(data.stats?.comment || data.comment_count)}\n┃ > ${fytBold("Compartidos")} › ${formatCount(data.stats?.share || data.share_count)}\n┃ > ${fytBold("Url")} › ${url}\n┣━━━━━━━━━━━━⬣\n┃ ⏳ Descargando video...\n╰━━〔 ⚡ ${fytBold("SYSTEM ACTIVE")} 〕━━⬣`;
+      const caption = `╭〔 🎥 ${fytBold("TIKTOK DOCUMENT")} 〕━⬣\n\n┃ ➥ ${fytBold(title)}\n\n┣━━━━━━━━━━━━⬣\n┃ > ${fytBold("Autor")} › ${author}\n┃ > ${fytBold("Vistas")} › ${formatCount(data.stats?.views || data.play_count)}\n┃ > ${fytBold("Likes")} › ${formatCount(data.stats?.likes || data.digg_count)}\n┃ > ${fytBold("Comentarios")} › ${formatCount(data.stats?.comment || data.comment_count)}\n┃ > ${fytBold("Compartidos")} › ${formatCount(data.stats?.share || data.share_count)}\n┃ > ${fytBold("Url")} › ${url}\n┣━━━━━━━━━━━━⬣\n┃ ⏳ Descargando video...\n╰━━〔 ⚡ ${fytBold("SYSTEM ACTIVE")} 〕━━⬣`;
       const file = await downloadBuffer(videoUrl, 120000);
       await reply({ document: file, mimetype: "video/mp4", fileName: `${safeFileName(title, "tiktok")}.mp4`, caption });
       await react("✅");
