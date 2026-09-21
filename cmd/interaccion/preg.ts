@@ -50,13 +50,13 @@ export default {
 			if (targetJid) {
 				const targetUser = db.getUser(targetJid);
 				const targetName = targetUser?.pushName || targetUser?.username || targetJid.split("@")[0];
-				caption = `\`${senderName}\` ${fytBold("preñó a")} \`${targetName}\` 🤰👶`;
+				caption = `\`${senderName}\` ${fytBold("embarazo a")} \`${targetName}\` 🤰👶`;
 				mentions = [sender, targetJid];
 			} else {
 				caption = `\`${senderName}\` ${fytBold("quiere embarazar a alguien")} 🤰`;
 			}
 
-			await react("✅");
+		
 			await reply({
 				video: { url: data.result },
 				caption,
