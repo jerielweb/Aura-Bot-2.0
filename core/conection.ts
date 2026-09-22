@@ -676,17 +676,18 @@ export async function connectToWhatsApp(
           )
           .filter(Boolean);
         const mentions = participantJids;
-        const text = mentions
-          .reduce(
-            (message: string, participant: string) =>
-              message +
-              "\n" +
-              template
-                .replaceAll("{group}", groupName)
-                .replaceAll("{mention}", `@${participant.split("@")[0]}`),
-            "",
-          )
-          .trim();
+        const tags = participantJids
+          .map((participant: string) => `@${participant.split("@")[0]}`)
+          .join(", ");
+        const groupDescription = metadata?.desc?.toString() || "Sin descripción";
+        const memberCount = metadata?.participants?.length || 0;
+        const text = template
+          .replaceAll("{group}", groupName)
+          .replaceAll("{mention}", tags)
+          .replaceAll("@user", tags)
+          .replaceAll("@group", groupName)
+          .replaceAll("@desc", groupDescription)
+          .replaceAll("@count", String(memberCount));
 
         await sock.sendMessage(id, { text, mentions }, { quoted: undefined });
       } catch (error) {

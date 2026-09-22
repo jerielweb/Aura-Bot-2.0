@@ -5,14 +5,17 @@ export default {
   category: "group",
   description: "Personaliza el mensaje de bienvenida.",
   groupOnly: true,
-  adminOnly: true,
+  adminOnly: false,
   async run(ctx: any) {
-    if (!ctx.isAdmin && !ctx.isMod && !ctx.isOwner)
-      return ctx.reply({
-        text: `╭〔 ❌ ${fytBold("AURA REED")} 〕⬣\n┃ ${fytBold("PERMISO DENEGADO")}\n╰━━━━━━━━━━━━⬣\n\n┃ > Solo los administradores pueden cambiar la bienvenida.\n\n╰〔 ⚡ ${fytBold("SYSTEM ALERT")} 〕⬣`,
-      });
     const value = ctx.args.join(" ").trim();
-    if (!value || ["reset", "default"].includes(value.toLowerCase())) {
+    if (!value) {
+      const currentMessage =
+        ctx.db.getGroup(ctx.from).welcomeMessage || "Mensaje por defecto";
+      return ctx.reply({
+        text: `╭〔 ⚙️ ${fytBold("SETWELCOME - AURA REED")} 〕⬣\n┃ 💬 ${fytBold("Mensaje personalizado actual:")}\n┃ > ${currentMessage}\n╰━━━━━━━━━━━━⬣\n\n💡 ${fytBold("Uso del comando:")}\n┃ • ${ctx.usedPrefix || "."}setwelcome [texto] - Establece un nuevo mensaje.\n┃ • ${ctx.usedPrefix || "."}setwelcome reset - Restablece al mensaje por defecto.\n\n🏷️ ${fytBold("Etiquetas disponibles:")}\n┃ • @user - Menciona al nuevo usuario\n┃ • @group - Nombre del grupo\n┃ • @desc - Descripción del grupo\n┃ • @count - Total de integrantes\n\n╰〔 ⚡ ${fytBold("SYSTEM INFO")} 〕⬣`,
+      });
+    }
+    if (["reset", "default"].includes(value.toLowerCase())) {
       ctx.db.setGroup(ctx.from, { welcomeMessage: null });
       return ctx.reply({
         text: `╭〔 ✅ ${fytBold("AURA REED")} 〕⬣\n┃ ${fytBold("MENSAJE RESTABLECIDO")}\n╰━━━━━━━━━━━━⬣\n\n┃ > Se usará la bienvenida por defecto.\n\n╰〔 ⚡ ${fytBold("SYSTEM INFO")} 〕⬣`,
