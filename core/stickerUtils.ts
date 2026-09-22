@@ -120,21 +120,27 @@ export async function applyStickerMetadata(
       fallbackAuthor ||
       "Aura Reed",
   ).trim();
-  const image = new WebP.Image();
-  await image.load(buffer);
-  const exifHeader = Buffer.from([
-    0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x41, 0x57,
-    0x07, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-  ]);
-  const metadata = Buffer.from(
+
+  const img = new WebP.Image();
+  await img.load(buffer);
+
+  const jsonBuff = Buffer.from(
     JSON.stringify({
-      "sticker-pack-id": "com.aurareed.sticker",
+      "sticker-pack-id": "com.aurareed.tech.aura",
       "sticker-pack-name": packName,
       "sticker-pack-publisher": author,
       emojis: ["✨"],
     }),
-    "utf8",
+    "utf-8"
   );
-  image.exif = Buffer.concat([exifHeader, metadata]);
-  return (await image.save(null)) as Buffer;
+
+  const exifHeader = Buffer.from([
+    0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x41, 0x57,
+    0x07, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00
+  ]);
+
+  const exifBuffer = Buffer.concat([exifHeader, jsonBuff]);
+  img.exif = exifBuffer;
+
+  return (await img.save(null)) as Buffer;
 }
