@@ -1,7 +1,7 @@
 import { fytBold } from "../../core/socketText.ts";
 import { DL_CONFIG } from "../../config.ts";
 import { downloadBuffer } from "../../core/downloadUtils.ts";
-import { extractEmojis, toSticker, applyStickerMetadata } from "../../core/stickerUtils.ts";
+import { extractEmojis, isWebp, toSticker, applyStickerMetadata } from "../../core/stickerUtils.ts";
 
 export default {
   name: ["emojivid", "emoji", "emoji-video", "emojivideo"],
@@ -13,7 +13,13 @@ export default {
     await react("⏳");
     try {
       const url = `${DL_CONFIG.alya.BASE_URL.replace(/\/+$/, "")}/whatsapp/emoji?emoji=${encodeURIComponent(emoji)}&key=${DL_CONFIG.alya.API_KEY}`;
-      const output = await toSticker(await downloadBuffer(url), true, 10);
+      const raw = await downloadBuffer(url);
+      // La API de Alya ya entrega un sticker webp animado listo para usar
+      // (con chunks ANIM/ANMF). ffmpeg no sabe decodificar webp animado —
+      // por eso fallaba "Decode error rate 1 exceeds maximum" — así que si
+      // ya viene como webp lo usamos directo y solo pasamos por toSticker
+      // cuando la API entregue otro formato (gif/mp4).
+      const output = isWebp(raw) ? raw : await toSticker(raw, true, 10);
       const finalSticker = await applyStickerMetadata(output, db, sender, msg.pushName);
       await react("✅");
       return reply({ sticker: finalSticker, mimetype: "image/webp" });

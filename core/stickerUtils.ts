@@ -62,6 +62,24 @@ export function isWebp(buffer: Buffer): boolean {
   );
 }
 
+/**
+ * Detecta si un buffer WebP es animado, revisando el bit de animación del
+ * chunk VP8X y/o la presencia de los chunks ANIM/ANMF. Es más confiable que
+ * fiarse únicamente del flag que reporta una API externa.
+ */
+export function isAnimatedWebp(buffer: Buffer): boolean {
+  if (!isWebp(buffer)) return false;
+  let offset = 12;
+  while (offset < buffer.length - 8) {
+    const tag = buffer.toString("ascii", offset, offset + 4);
+    const size = buffer.readUInt32LE(offset + 4);
+    if (tag === "VP8X" && (buffer[offset + 8] & 0x02) !== 0) return true;
+    if (tag === "ANIM" || tag === "ANMF") return true;
+    offset += 8 + size + (size % 2);
+  }
+  return false;
+}
+
 export async function toSticker(
   input: Buffer,
   animated: boolean,
@@ -76,7 +94,7 @@ export async function toSticker(
 
   try {
     await writeFile(inputPath, input);
-    
+
     // Filtro robusto que maneja tanto imágenes estáticas como webps/videos animados asegurando canales de color visibles
     const filter = animated
       ? `scale=512:512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=black@0,fps=20`
@@ -98,6 +116,15 @@ export async function toSticker(
 
 export async function imageToWebp(buffer: Buffer, animated = false): Promise<Buffer> {
   try {
+    // WebP animado: ffmpeg NO puede decodificar los chunks ANIM/ANMF (su decoder
+    // nativo de webp es de un solo frame), pero sharp/libvips sí puede, así que
+    // para ese caso concreto lo forzamos por sharp y evitamos el fallback a ffmpeg.
+    if (animated && isAnimatedWebp(buffer)) {
+      return await sharp(buffer, { animated: true, limitInputPixels: false })
+        .resize(512, 512, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
+        .webp({ quality: 80, lossless: false, alphaQuality: 100, loop: 0 })
+        .toBuffer();
+    }
     // Si falla sharp por metadatos o formato corrupto, lo derivamos de forma segura a toSticker con ffmpeg
     return await sharp(buffer, animated ? { animated: true, limitInputPixels: false } : { limitInputPixels: false })
       .resize(512, 512, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
@@ -139,15 +166,23 @@ export async function applyStickerMetadata(
       "sticker-pack-publisher": author,
       emojis: ["✨"],
     }),
-    "utf-8"
+    "utf-8",
   );
 
   const exifHeader = Buffer.from([
     0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x41, 0x57,
-    0x07, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00
+    0x07, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00,
   ]);
 
   const exifBuffer = Buffer.concat([exifHeader, jsonBuff]);
+
+  // CRÍTICO: los bytes 14-17 del header traen un tamaño "placeholder" (22)
+  // que NO coincide con el tamaño real del JSON. Si no se sobrescribe con el
+  // largo real, WhatsApp descarta el chunk EXIF por corrupto y el sticker se
+  // muestra en blanco/roto (el cuadro gris con la esquina doblada). Este era
+  // el bug que afectaba a TODOS los comandos, ya que todos pasan por aquí.
+  exifBuffer.writeUInt32LE(jsonBuff.length, 14);
+
   img.exif = exifBuffer;
 
   return (await img.save(null)) as Buffer;
