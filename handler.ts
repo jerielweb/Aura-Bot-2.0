@@ -16,11 +16,7 @@ import {
   NOT_PREMIUM,
 } from "./core/socketText.ts";
 import { db } from "./dbController/db.ts";
-import {
-  handleAntilink,
-  handleGroupStatus,
-  handleGroupToxic,
-} from "./core/groupModeration.ts";
+import { handleGroupStatus, handleGroupToxic } from "./core/groupModeration.ts";
 
 function getMessageWeek(date = new Date()): string {
   const current = new Date(
@@ -316,10 +312,10 @@ export async function handleMessage(
     const msg = rawMsg;
     const from = msg.key?.remoteJid;
     if (!from) return;
+    if (await handleGroupStatus(sock, msg, runtimeDb)) return;
     if (from === "status@broadcast") return;
 
     const isGroup = from.endsWith("@g.us");
-    if (isGroup && (await handleGroupStatus(sock, msg, runtimeDb))) return;
     const participantRaw = isGroup
       ? msg.key?.participant || msg.participant || ""
       : "";

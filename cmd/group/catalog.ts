@@ -26,29 +26,24 @@ export default {
     const disabled = Array.isArray(group.catBlocked)
       ? group.catBlocked.map((category: string) => category.toLowerCase())
       : [];
-    const enabled = categories.filter(
-      (category) => !disabled.includes(category),
-    );
-
     if (!target) {
       return ctx.reply({
-        text: `╭〔 ⚙️ ${fytBold("CATÁLOGO DE COMANDOS")} 〕⬣
-┃ ${fytBold("USO")}
+        text: `╭〔 ⚙️ ${fytBold("CMD MANAGER")} 〕⬣
+┃ 🛡️ ${fytBold("GESTIÓN DE CATEGORÍAS")}
 ╰━━━━━━━━━━━━⬣
 
-┃ ➪ ${ctx.usedPrefix || "."}disable funy
-┃ ➪ ${ctx.usedPrefix || "."}enable funy
-┃
-┃ Catálogos disponibles:
-┃ ${categories.join(", ") || "Ninguno"}
-┃
-┃ ✅ Activados:
-┃ ${enabled.join(", ") || "Ninguno"}
-┃
-┃ ❌ Desactivados:
-┃ ${disabled.join(", ") || "Ninguno"}
+┃ ➪ ${ctx.usedPrefix || "."}disable [cat]
+┃ ✦ Habilitar comandos
 
-╰〔 ⚡ ${fytBold("SYSTEM INFO")} 〕⬣`,
+┃ ➪ ${ctx.usedPrefix || "."}enable [cat]
+┃ ✦ Deshabilitar comandos
+
+╭━━━━━━━━━━━━⬣
+┃ 📂 Categorías y Estado:
+${categories.map((category) => `┃ > ${disabled.includes(category) ? "❌" : "✅"} ${category}`).join("\n")}
+╰━━━━━━━━━━━━⬣
+
+╰〔 ⚡ ${fytBold("SYSTEM")} 〕⬣`,
       });
     }
 

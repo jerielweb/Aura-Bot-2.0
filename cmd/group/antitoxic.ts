@@ -9,6 +9,7 @@ export default {
   botAdmin: true,
   async run(ctx: any) {
     const value = String(ctx.args?.[0] || "").toLowerCase();
+    const group = ctx.db.getGroup(ctx.from);
     const validValues = [
       "on",
       "off",
@@ -23,7 +24,7 @@ export default {
     ];
     if (!validValues.includes(value)) {
       return ctx.reply({
-        text: `╭〔 ⚙️ ${fytBold("AURA REED")} 〕⬣\n┃ 🛡️ ${fytBold("SISTEMA ANTITOXIC")}\n╰━━━━━━━━━━━━⬣\n\n┃ ℹ️ Usa: ${ctx.usedPrefix || "."}antitoxic on\n┃ ℹ️ O: ${ctx.usedPrefix || "."}antitoxic off\n\n╰〔 ⚡ ${fytBold("SYSTEM INFO")} 〕⬣`,
+        text: `╭〔 🛡️ ${fytBold("AURA REED")} 〕⬣\n┃ ⚙️ ${fytBold("SISTEMA ANTITOXIC")}\n╰━━━━━━━━━━━━⬣\n\n┃ ℹ️ Estado actual: ${group.antiToxic ? "✅ Activado" : "❌ Desactivado"}\n\n┣━━━━━━━━━━━━⬣\n\n┃ ➪ ${ctx.usedPrefix || "."}antitoxic on\n┃ ✦ Activar sistema antitoxic\n\n┃ ➪ ${ctx.usedPrefix || "."}antitoxic off\n┃ ✦ Desactivar sistema antitoxic\n\n╰〔 ⚡ ${fytBold("SYSTEM")} 〕⬣`,
       });
     }
 

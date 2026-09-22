@@ -194,18 +194,19 @@ export async function handleGroupStatus(
   message: any,
   db: any,
 ): Promise<boolean> {
-  const groupJid = message?.key?.remoteJid;
-  if (!groupJid?.endsWith("@g.us")) return false;
-
   const statusMessage =
     message.message?.groupStatusMentionMessage ||
     message.message?.groupStatusMessageV2;
   if (!statusMessage) return false;
 
+  const groupJid =
+    statusMessage.statusKey?.remoteJid || message?.key?.remoteJid || "";
+  if (!groupJid.endsWith("@g.us")) return false;
+
   const group = db.getGroup(groupJid);
   if (!group.antiStatus) return false;
 
-  const statusKey = statusMessage.statusKey;
+  const statusKey = statusMessage.statusKey || statusMessage.key;
   const userJid =
     statusKey?.participant ||
     message.key?.participant ||
