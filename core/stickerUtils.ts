@@ -145,10 +145,22 @@ export async function applyStickerMetadata(
   sender: string,
   fallbackAuthor?: string,
 ): Promise<Buffer> {
+  if (!Buffer.isBuffer(buffer) || buffer.length < 12) {
+    throw new Error("El sticker generado no es un buffer válido.");
+  }
+
+  if (!isWebp(buffer)) {
+    throw new Error("El archivo generado no es un WebP válido.");
+  }
+
   const user = db?.getUser?.(sender) || {};
+
   const packName = String(
-    user.stickerPackName || user.data?.stickerPackName || "Aura Reed",
+    user.stickerPackName ||
+      user.data?.stickerPackName ||
+      "Aura Reed",
   ).trim();
+
   const author = String(
     user.stickerPackAuthor ||
       user.data?.stickerPackAuthor ||
@@ -156,34 +168,61 @@ export async function applyStickerMetadata(
       "Aura Reed",
   ).trim();
 
-  const img = new WebP.Image();
-  await img.load(buffer);
+  const json = {
+    "sticker-pack-id": "com.aurareed.tech.aura",
+    "sticker-pack-name": packName,
+    "sticker-pack-publisher": author,
+    emojis: ["✨"],
+  };
 
-  const jsonBuff = Buffer.from(
-    JSON.stringify({
-      "sticker-pack-id": "com.aurareed.tech.aura",
-      "sticker-pack-name": packName,
-      "sticker-pack-publisher": author,
-      emojis: ["✨"],
-    }),
-    "utf-8",
+  const jsonBuffer = Buffer.from(
+    JSON.stringify(json),
+    "utf8",
   );
 
+  /*
+   * Estructura EXIF usada para metadata de stickers de WhatsApp.
+   *
+   * IMPORTANTE:
+   *
+   * bytes 14-17 = tamaño del JSON
+   * bytes 18-19 = 0x16 0x00
+   *
+   * NO colocar 0x16 en el byte 16.
+   */
   const exifHeader = Buffer.from([
-    0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x41, 0x57,
-    0x07, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00,
+    0x49, 0x49, 0x2a, 0x00,
+    0x08, 0x00, 0x00, 0x00,
+    0x01, 0x00,
+    0x41, 0x57,
+    0x07, 0x00,
+    0x00, 0x00,
+    0x00, 0x00,
+    0x16, 0x00,
+    0x00, 0x00,
   ]);
 
-  const exifBuffer = Buffer.concat([exifHeader, jsonBuff]);
+  const exifBuffer = Buffer.concat([
+    exifHeader,
+    jsonBuffer,
+  ]);
 
-  // CRÍTICO: los bytes 14-17 del header traen un tamaño "placeholder" (22)
-  // que NO coincide con el tamaño real del JSON. Si no se sobrescribe con el
-  // largo real, WhatsApp descarta el chunk EXIF por corrupto y el sticker se
-  // muestra en blanco/roto (el cuadro gris con la esquina doblada). Este era
-  // el bug que afectaba a TODOS los comandos, ya que todos pasan por aquí.
-  exifBuffer.writeUInt32LE(jsonBuff.length, 14);
+  // El tamaño real del JSON se almacena en los bytes 14-17.
+  exifBuffer.writeUInt32LE(jsonBuffer.length, 14);
+
+  const img = new WebP.Image();
+
+  await img.load(buffer);
 
   img.exif = exifBuffer;
 
-  return (await img.save(null)) as Buffer;
+  const result = await img.save(null);
+
+  if (!Buffer.isBuffer(result) || !isWebp(result)) {
+    throw new Error(
+      "node-webpmux generó un WebP inválido después de aplicar metadata.",
+    );
+  }
+
+  return result;
 }
