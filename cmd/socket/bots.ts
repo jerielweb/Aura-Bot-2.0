@@ -11,8 +11,70 @@ function normalizeGroup(value: unknown): string {
 	return String(value || "").trim().replace(/:.+@/, "@");
 }
 
-function getBotNumber(bot: any): string {
-	return normalizeNumber(bot.bot_id || bot.jid || bot.phone_number);
+function cleanJid(value: unknown): string {
+	return String(value || "")
+		.trim()
+		.replace(/:\d+(?=@)/, "");
+}
+
+function isPhoneJid(value: unknown): boolean {
+	return /^\d+@s\.whatsapp\.net$/.test(cleanJid(value));
+}
+
+function getBotNumber(bot: any, fallback?: string): string {
+	const jid = [
+		bot.jid,
+		bot.phone_number,
+		bot.data?.jid,
+		fallback,
+		bot.bot_id,
+	].find((value) => isPhoneJid(value));
+	return normalizeNumber(jid);
+}
+
+function matchesIdentity(value: unknown, identities: unknown[]): boolean {
+	const normalized = cleanJid(value);
+	if (!normalized) return false;
+	return identities.some((identity) => {
+		const candidate = cleanJid(identity);
+		return candidate && candidate === normalized;
+	});
+}
+
+async function resolveBotJid(
+	bot: any,
+	participants: any[],
+	resolveLid?: (jid: string) => Promise<string>,
+): Promise<string> {
+	const identities = [bot.bot_id, bot.lid, bot.jid, bot.phone_number].filter(Boolean);
+	const participant = participants.find((entry: any) =>
+		matchesIdentity(entry?.id, identities) ||
+			matchesIdentity(entry?.lid, identities) ||
+			matchesIdentity(entry?.jid, identities) ||
+			matchesIdentity(entry?.phoneNumber, identities),
+	);
+
+	const participantJid = [
+		participant?.phoneNumber,
+		participant?.jid,
+		participant?.id,
+	].find((value) => isPhoneJid(value));
+	if (participantJid) return cleanJid(participantJid);
+
+	const directJid = [bot.jid, bot.phone_number, bot.data?.jid].find((value) =>
+		isPhoneJid(value),
+	);
+	if (directJid) return cleanJid(directJid);
+
+	const lid = [bot.lid, bot.bot_id].find((value) =>
+		String(value || "").endsWith("@lid"),
+	);
+	if (lid && resolveLid) {
+		const resolved = await resolveLid(cleanJid(lid));
+		if (isPhoneJid(resolved)) return cleanJid(resolved);
+	}
+
+	return "";
 }
 
 function getBotStatus(bot: any): string {
@@ -27,12 +89,13 @@ export default {
 	description: "Muestra los bots registrados y su estado de conexión.",
 	ownerOnly: false,
 
-	async run({ from, db, usedPrefix, reply }: any) {
+	async run({ from, db, groupMeta, resolveLid, usedPrefix, reply }: any) {
 		const bots = (db.getAllBots?.() || []).filter((bot: any) =>
-			getBotNumber(bot),
+			getBotNumber(bot) || bot.bot_id || bot.lid,
 		);
 		const isGroup = String(from || "").endsWith("@g.us");
 		const currentGroup = normalizeGroup(from);
+		const participants = isGroup ? groupMeta?.participants || [] : [];
 		const mentions: string[] = [];
 
 		let visibleBots = bots;
@@ -58,13 +121,18 @@ export default {
 				? `┃ > No hay bots registrados en este grupo.\n`
 				: `┃ > No hay bots registrados.\n`;
 		} else {
-			visibleBots.forEach((bot: any, index: number) => {
-				const number = getBotNumber(bot);
+			for (const [index, bot] of visibleBots.entries()) {
+				const jid = await resolveBotJid(bot, participants, resolveLid);
+				const number = getBotNumber(bot, jid);
 				const name = String(bot.bot_name || "Sub-Bot").trim();
 				text += `┃ ${index + 1}. ${fytBold(name)}\n`;
-				text += `┃    @${number} ${getBotStatus(bot)}\n`;
-				mentions.push(`${number}@s.whatsapp.net`);
-			});
+				if (jid) {
+					text += `┃    @${number} ${getBotStatus(bot)}\n`;
+					mentions.push(jid);
+				} else {
+					text += `┃    ${getBotStatus(bot)}\n`;
+				}
+			}
 		}
 
 		text += `\n┣━━━━━━━━━━━━⬣\n`;
