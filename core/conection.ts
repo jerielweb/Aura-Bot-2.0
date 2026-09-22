@@ -679,7 +679,8 @@ export async function connectToWhatsApp(
         const tags = participantJids
           .map((participant: string) => `@${participant.split("@")[0]}`)
           .join(", ");
-        const groupDescription = metadata?.desc?.toString() || "Sin descripción";
+        const groupDescription =
+          metadata?.desc?.toString() || "Sin descripción";
         const memberCount = metadata?.participants?.length || 0;
         const text = template
           .replaceAll("{group}", groupName)

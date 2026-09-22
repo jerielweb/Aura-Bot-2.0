@@ -34,22 +34,24 @@ export default {
         maxBuffer: 2 * 1024 * 1024,
         shell: "/bin/sh",
       });
-      const output = [limitOutput(stdout), limitOutput(stderr && `[STDERR]\n${stderr}`)]
-        .filter(Boolean)
-        .join("\n") || "Comando ejecutado sin salida de texto.";
+      const output =
+        [limitOutput(stdout), limitOutput(stderr && `[STDERR]\n${stderr}`)]
+          .filter(Boolean)
+          .join("\n") || "Comando ejecutado sin salida de texto.";
 
       await react("✅");
       return reply({
         text: `╭〔 🖥️ ${fytBold("TERMINAL EXEC")} 〕━⬣\n\n\`\`\`\n${output}\n\`\`\`\n\n╰━━〔 ⚡ ${fytBold("SYSTEM")} 〕━━⬣`,
       });
     } catch (error: any) {
-      const output = [
-        limitOutput(error?.stdout),
-        limitOutput(error?.stderr && `[STDERR]\n${error.stderr}`),
-        error?.message && `[ERROR CRÍTICO]\n${error.message}`,
-      ]
-        .filter(Boolean)
-        .join("\n") || "Error desconocido.";
+      const output =
+        [
+          limitOutput(error?.stdout),
+          limitOutput(error?.stderr && `[STDERR]\n${error.stderr}`),
+          error?.message && `[ERROR CRÍTICO]\n${error.message}`,
+        ]
+          .filter(Boolean)
+          .join("\n") || "Error desconocido.";
 
       await react("❌");
       return reply({

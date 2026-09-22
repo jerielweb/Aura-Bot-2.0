@@ -3,71 +3,90 @@ import { DL_CONFIG } from "../../config.ts";
 import { request } from "undici";
 
 export default {
-	name: ["anal"],
-	description: "Reacción NSFW de anal.",
-	category: "nsfw",
+  name: ["anal"],
+  description: "Reacción NSFW de anal.",
+  category: "nsfw",
 
-	async run({ args, reply, react, msg, from, sender, text, db, isGroup }: any) {
-		const groupData = db.getGroup(from);
-		if (isGroup && !groupData?.nsfwMode) {
-			await react("🔞");
-			return reply({ text: `🔞 ${fytBold("NSFW desactivado")} en este grupo.\n┃ > Un admin puede activarlo con: .nsfw on` });
-		}
+  async run({ args, reply, react, msg, from, sender, text, db, isGroup }: any) {
+    const groupData = db.getGroup(from);
+    if (isGroup && !groupData?.nsfwMode) {
+      await react("🔞");
+      return reply({
+        text: `🔞 ${fytBold("NSFW desactivado")} en este grupo.\n┃ > Un admin puede activarlo con: .nsfw on`,
+      });
+    }
 
-		await react("🍑");
+    await react("🍑");
 
-		try {
-			let targetJid = null;
-			const mentionedJid = msg?.message?.extendedTextMessage?.contextInfo?.mentionedJid;
-			if (mentionedJid && mentionedJid.length > 0) targetJid = mentionedJid[0];
-			else if (msg?.message?.extendedTextMessage?.contextInfo?.participant) targetJid = msg.message.extendedTextMessage.contextInfo.participant;
-			else if (text) {
-				const match = text.match(/@(\d+)/);
-				if (match) targetJid = `${match[1]}@s.whatsapp.net`;
-			}
+    try {
+      let targetJid = null;
+      const mentionedJid =
+        msg?.message?.extendedTextMessage?.contextInfo?.mentionedJid;
+      if (mentionedJid && mentionedJid.length > 0) targetJid = mentionedJid[0];
+      else if (msg?.message?.extendedTextMessage?.contextInfo?.participant)
+        targetJid = msg.message.extendedTextMessage.contextInfo.participant;
+      else if (text) {
+        const match = text.match(/@(\d+)/);
+        if (match) targetJid = `${match[1]}@s.whatsapp.net`;
+      }
 
-			const senderUser = db.getUser(sender);
-			const senderName = senderUser?.pushName || senderUser?.username || msg.pushName || sender.split("@")[0];
+      const senderUser = db.getUser(sender);
+      const senderName =
+        senderUser?.pushName ||
+        senderUser?.username ||
+        msg.pushName ||
+        sender.split("@")[0];
 
-			const baseUrl = DL_CONFIG.alya.BASE_URL.replace(/\/+$/, "");
-			const apiUrl = `${baseUrl}/nsfw/interaction?inter=anal&key=${DL_CONFIG.alya.API_KEY}`;
+      const baseUrl = DL_CONFIG.alya.BASE_URL.replace(/\/+$/, "");
+      const apiUrl = `${baseUrl}/nsfw/interaction?inter=anal&key=${DL_CONFIG.alya.API_KEY}`;
 
-			const response = await request(apiUrl, {
-				signal: AbortSignal.timeout(10000),
-				headers: { "User-Agent": "AuraReedBot/2.0", Accept: "application/json" },
-			});
+      const response = await request(apiUrl, {
+        signal: AbortSignal.timeout(10000),
+        headers: {
+          "User-Agent": "AuraReedBot/2.0",
+          Accept: "application/json",
+        },
+      });
 
-			const bodyText = await response.body.text();
-			if (response.statusCode !== 200) throw new Error(`HTTP ${response.statusCode}`);
+      const bodyText = await response.body.text();
+      if (response.statusCode !== 200)
+        throw new Error(`HTTP ${response.statusCode}`);
 
-			let data: any;
-			try { data = JSON.parse(bodyText); }
-			catch { throw new Error("Respuesta no es JSON"); }
+      let data: any;
+      try {
+        data = JSON.parse(bodyText);
+      } catch {
+        throw new Error("Respuesta no es JSON");
+      }
 
-			if (!data?.status || !data?.result) throw new Error("API no devolvió resultado válido");
+      if (!data?.status || !data?.result)
+        throw new Error("API no devolvió resultado válido");
 
-			let caption = "";
-			let mentions = [sender];
+      let caption = "";
+      let mentions = [sender];
 
-			if (targetJid) {
-				const targetUser = db.getUser(targetJid);
-				const targetName = targetUser?.pushName || targetUser?.username || targetJid.split("@")[0];
-				caption = `\`${senderName}\` ${fytBold("tuvo sexo anal con")} \`${targetName}\` 🍑`;
-				mentions = [sender, targetJid];
-			} else {
-				caption = `\`${senderName}\` ${fytBold("busca sexo anal")} 🍑`;
-			}
+      if (targetJid) {
+        const targetUser = db.getUser(targetJid);
+        const targetName =
+          targetUser?.pushName ||
+          targetUser?.username ||
+          targetJid.split("@")[0];
+        caption = `\`${senderName}\` ${fytBold("tuvo sexo anal con")} \`${targetName}\` 🍑`;
+        mentions = [sender, targetJid];
+      } else {
+        caption = `\`${senderName}\` ${fytBold("busca sexo anal")} 🍑`;
+      }
 
-			await reply({
-				video: { url: data.result },
-				caption,
-				mentions,
-				gifPlayback: true,
-				mimetype: "video/mp4",
-			});
-		} catch (error: any) {
-			await react("❌");
-			await reply({ text: `❌ Error: ${error?.message}` });
-		}
-	},
+      await reply({
+        video: { url: data.result },
+        caption,
+        mentions,
+        gifPlayback: true,
+        mimetype: "video/mp4",
+      });
+    } catch (error: any) {
+      await react("❌");
+      await reply({ text: `❌ Error: ${error?.message}` });
+    }
+  },
 };

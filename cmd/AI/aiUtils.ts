@@ -4,7 +4,9 @@ import { requestJson } from "../../core/downloadUtils.ts";
 const API = DL_CONFIG.alya.BASE_URL.replace(/\/+$/, "");
 
 export function getPrompt(args: unknown): string {
-  return Array.isArray(args) ? args.join(" ").trim() : String(args || "").trim();
+  return Array.isArray(args)
+    ? args.join(" ").trim()
+    : String(args || "").trim();
 }
 
 export function extractText(data: any): string | null {

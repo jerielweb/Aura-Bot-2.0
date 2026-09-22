@@ -25,7 +25,8 @@ export default {
   description: "Convierte texto en sticker estilo brat.",
   async run({ args, msg, db, sender, react, reply }: any) {
     const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-    const quotedText = quoted?.conversation || quoted?.extendedTextMessage?.text || "";
+    const quotedText =
+      quoted?.conversation || quoted?.extendedTextMessage?.text || "";
     const text = args.join(" ").trim() || quotedText;
     if (!text) {
       return reply({
@@ -39,12 +40,19 @@ export default {
       url.searchParams.set("text", text);
       url.searchParams.set("key", DL_CONFIG.alya.API_KEY);
       const output = await toSticker(await getSticker(url), false);
-      const finalSticker = await applyStickerMetadata(output, db, sender, msg.pushName);
+      const finalSticker = await applyStickerMetadata(
+        output,
+        db,
+        sender,
+        msg.pushName,
+      );
       await react("✅");
       return reply({ sticker: finalSticker, mimetype: "image/webp" });
     } catch (error: any) {
       await react("❌");
-      return reply({ text: `╭〔 ❌ ${fytBold("AURA REED")} 〕⬣\n┃ ⚠️ ERROR AL CREAR STICKER\n╰━━━━━━━━━━━━⬣\n\n┃ > ${error?.message || "No se pudo generar el sticker."}\n╰〔 ⚡ SYSTEM 〕⬣` });
+      return reply({
+        text: `╭〔 ❌ ${fytBold("AURA REED")} 〕⬣\n┃ ⚠️ ERROR AL CREAR STICKER\n╰━━━━━━━━━━━━⬣\n\n┃ > ${error?.message || "No se pudo generar el sticker."}\n╰〔 ⚡ SYSTEM 〕⬣`,
+      });
     }
   },
 };

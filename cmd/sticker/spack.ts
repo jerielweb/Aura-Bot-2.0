@@ -13,7 +13,11 @@ import {
 import { fytBold } from "../../core/socketText.ts";
 import { DL_CONFIG } from "../../config.ts";
 import { downloadBuffer, requestJson } from "../../core/downloadUtils.ts";
-import { imageToWebp, isWebp, isAnimatedWebp } from "../../core/stickerUtils.ts";
+import {
+  imageToWebp,
+  isWebp,
+  isAnimatedWebp,
+} from "../../core/stickerUtils.ts";
 
 // Configuración de endpoints MMS nativos de WhatsApp (igual que spack.js)
 MEDIA_PATH_MAP["sticker-pack"] = "/mms/document";
@@ -72,8 +76,10 @@ async function sendStickerPack(
   const files: Record<string, Buffer> = {};
 
   const meta = stickers.map((s: any) => {
-    if (s.sticker.length > 1024 * 1024) throw new Error("Un sticker supera 1MB.");
-    const fileName = sha256(s.sticker).toString("base64").replace(/\//g, "-") + ".webp";
+    if (s.sticker.length > 1024 * 1024)
+      throw new Error("Un sticker supera 1MB.");
+    const fileName =
+      sha256(s.sticker).toString("base64").replace(/\//g, "-") + ".webp";
     files[fileName] = s.sticker;
     return {
       fileName,
@@ -103,7 +109,8 @@ async function sendStickerPack(
       publisher,
       packDescription: description,
       stickerPackId: packId,
-      stickerPackOrigin: proto.Message.StickerPackMessage.StickerPackOrigin.THIRD_PARTY,
+      stickerPackOrigin:
+        proto.Message.StickerPackMessage.StickerPackOrigin.THIRD_PARTY,
       stickerPackSize: zipBuffer.length,
       stickers: meta,
       fileSha256: up.fileSha256,
@@ -117,7 +124,10 @@ async function sendStickerPack(
   };
 
   const userJid = sock.user?.id || sock.user?.jid;
-  const m = generateWAMessageFromContent(remoteJid, content as any, { quoted, userJid });
+  const m = generateWAMessageFromContent(remoteJid, content as any, {
+    quoted,
+    userJid,
+  });
   await sock.relayMessage(remoteJid, m.message, { messageId: m.key.id });
   return m;
 }
@@ -125,21 +135,42 @@ async function sendStickerPack(
 export default {
   name: ["stickersearch", "buscars", "spack"],
   category: "sticker",
-  description: "Busca un pack de stickers y lo envía como paquete nativo de WhatsApp.",
-  async run({ sock, msg, from, args, db, sender, usedPrefix, react, reply }: any) {
+  description:
+    "Busca un pack de stickers y lo envía como paquete nativo de WhatsApp.",
+  async run({
+    sock,
+    msg,
+    from,
+    args,
+    db,
+    sender,
+    usedPrefix,
+    react,
+    reply,
+  }: any) {
     const query = args.join(" ").trim();
-    if (!query) return reply(`⚠️ Usa el comando con un nombre. Ejemplo: ${usedPrefix}spack gatos`);
+    if (!query)
+      return reply(
+        `⚠️ Usa el comando con un nombre. Ejemplo: ${usedPrefix}spack gatos`,
+      );
     await react("⏳");
     try {
       const api = DL_CONFIG.alya.BASE_URL.replace(/\/+$/, "");
-      const search = await requestJson(`${api}/stickerly/search?query=${encodeURIComponent(query)}&key=${DL_CONFIG.alya.API_KEY}`);
-      const packs = (search?.resultados || search?.result || []).filter((pack: any) => pack?.url && !pack.isPaid);
+      const search = await requestJson(
+        `${api}/stickerly/search?query=${encodeURIComponent(query)}&key=${DL_CONFIG.alya.API_KEY}`,
+      );
+      const packs = (search?.resultados || search?.result || []).filter(
+        (pack: any) => pack?.url && !pack.isPaid,
+      );
       if (!packs.length) throw new Error("No se encontraron packs gratuitos.");
 
-      const detail = await requestJson(`${api}/stickerly/detail?url=${encodeURIComponent(packs[0].url)}&key=${DL_CONFIG.alya.API_KEY}`);
+      const detail = await requestJson(
+        `${api}/stickerly/detail?url=${encodeURIComponent(packs[0].url)}&key=${DL_CONFIG.alya.API_KEY}`,
+      );
       const packInfo = detail?.detalles || detail;
       const rawStickers = (packInfo?.stickers || []).slice(0, 60);
-      if (!rawStickers.length) throw new Error("El pack no contiene stickers disponibles.");
+      if (!rawStickers.length)
+        throw new Error("El pack no contiene stickers disponibles.");
 
       await reply({
         text: `╭〔 📦 ${fytBold("AURA REED")} 〕⬣\n┃ 🏷️ ${fytBold("PROCESANDO PACK")}\n╰━━━━━━━━━━━━⬣\n\n┃ 📌 Pack: ${packInfo?.name || query}\n┃ 🖼️ Stickers: ${rawStickers.length}\n┃ ⏳ Empaquetando como sticker pack nativo...\n╰〔 ⚡ SYSTEM 〕⬣`,
@@ -150,26 +181,44 @@ export default {
           const url = sticker.imageUrl || sticker.url || sticker.image;
           if (!url) throw new Error("Sticker sin url.");
           const buffer = await downloadBuffer(url);
-          const animated = Boolean(sticker.isAnimated || sticker.animated) || isAnimatedWebp(buffer);
-          const webp = isWebp(buffer) ? buffer : await imageToWebp(buffer, animated);
+          const animated =
+            Boolean(sticker.isAnimated || sticker.animated) ||
+            isAnimatedWebp(buffer);
+          const webp = isWebp(buffer)
+            ? buffer
+            : await imageToWebp(buffer, animated);
           return { sticker: webp, isAnimated: animated, emojis: ["🎭"] };
         }),
       );
       const stickers = results
-        .filter((r): r is PromiseFulfilledResult<any> => r.status === "fulfilled")
+        .filter(
+          (r): r is PromiseFulfilledResult<any> => r.status === "fulfilled",
+        )
         .map((r) => r.value);
-      if (!stickers.length) throw new Error("No se pudo convertir ningún sticker del paquete.");
+      if (!stickers.length)
+        throw new Error("No se pudo convertir ningún sticker del paquete.");
 
       const user = db?.getUser?.(sender) || {};
-      const packName = String(user.stickerPackName || user.data?.stickerPackName || "Aura Reed").trim();
+      const packName = String(
+        user.stickerPackName || user.data?.stickerPackName || "Aura Reed",
+      ).trim();
       const authorName = String(
-        user.stickerPackAuthor || user.data?.stickerPackAuthor || msg.pushName || "Aura Reed",
+        user.stickerPackAuthor ||
+          user.data?.stickerPackAuthor ||
+          msg.pushName ||
+          "Aura Reed",
       ).trim();
 
       const thumbUrl = packInfo?.thumbnailUrl || packInfo?.thumbnail;
       const cover = thumbUrl
-        ? await sharp(await downloadBuffer(thumbUrl)).resize(96, 96, { fit: "cover" }).webp({ quality: 80 }).toBuffer()
-        : await sharp(stickers[0].sticker).resize(96, 96, { fit: "cover" }).webp({ quality: 80 }).toBuffer();
+        ? await sharp(await downloadBuffer(thumbUrl))
+            .resize(96, 96, { fit: "cover" })
+            .webp({ quality: 80 })
+            .toBuffer()
+        : await sharp(stickers[0].sticker)
+            .resize(96, 96, { fit: "cover" })
+            .webp({ quality: 80 })
+            .toBuffer();
 
       await sendStickerPack(sock, from, {
         name: packName,

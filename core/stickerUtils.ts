@@ -46,11 +46,16 @@ export async function downloadTargetMedia(
       }
     : message;
   return Buffer.from(
-    await downloadMediaMessage(target, "buffer", {}, {
-      logger: console as any,
-      reuploadRequest: async (mediaMessage: any) =>
-        sock?.updateMediaMessage?.(mediaMessage) || mediaMessage,
-    }),
+    await downloadMediaMessage(
+      target,
+      "buffer",
+      {},
+      {
+        logger: console as any,
+        reuploadRequest: async (mediaMessage: any) =>
+          sock?.updateMediaMessage?.(mediaMessage) || mediaMessage,
+      },
+    ),
   );
 }
 
@@ -100,7 +105,20 @@ export async function toSticker(
       ? `scale=512:512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=black@0,fps=20`
       : `scale=512:512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=black@0`;
 
-    const args = ["-y", "-i", inputPath, "-vf", filter, "-c:v", "libwebp", "-lossless", "0", "-q:v", "80", "-an"];
+    const args = [
+      "-y",
+      "-i",
+      inputPath,
+      "-vf",
+      filter,
+      "-c:v",
+      "libwebp",
+      "-lossless",
+      "0",
+      "-q:v",
+      "80",
+      "-an",
+    ];
     if (animated) args.push("-loop", "0", "-t", String(maxDuration));
 
     args.push(outputPath);
@@ -114,21 +132,40 @@ export async function toSticker(
   }
 }
 
-export async function imageToWebp(buffer: Buffer, animated = false): Promise<Buffer> {
+export async function imageToWebp(
+  buffer: Buffer,
+  animated = false,
+): Promise<Buffer> {
   try {
     // WebP animado: ffmpeg NO puede decodificar los chunks ANIM/ANMF (su decoder
     // nativo de webp es de un solo frame), pero sharp/libvips sí puede, así que
     // para ese caso concreto lo forzamos por sharp y evitamos el fallback a ffmpeg.
     if (animated && isAnimatedWebp(buffer)) {
       return await sharp(buffer, { animated: true, limitInputPixels: false })
-        .resize(512, 512, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
+        .resize(512, 512, {
+          fit: "contain",
+          background: { r: 0, g: 0, b: 0, alpha: 0 },
+        })
         .webp({ quality: 80, lossless: false, alphaQuality: 100, loop: 0 })
         .toBuffer();
     }
     // Si falla sharp por metadatos o formato corrupto, lo derivamos de forma segura a toSticker con ffmpeg
-    return await sharp(buffer, animated ? { animated: true, limitInputPixels: false } : { limitInputPixels: false })
-      .resize(512, 512, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
-      .webp({ quality: 80, lossless: false, alphaQuality: 100, loop: animated ? 0 : undefined })
+    return await sharp(
+      buffer,
+      animated
+        ? { animated: true, limitInputPixels: false }
+        : { limitInputPixels: false },
+    )
+      .resize(512, 512, {
+        fit: "contain",
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      })
+      .webp({
+        quality: 80,
+        lossless: false,
+        alphaQuality: 100,
+        loop: animated ? 0 : undefined,
+      })
       .toBuffer();
   } catch {
     return await toSticker(buffer, animated);
@@ -156,9 +193,7 @@ export async function applyStickerMetadata(
   const user = db?.getUser?.(sender) || {};
 
   const packName = String(
-    user.stickerPackName ||
-      user.data?.stickerPackName ||
-      "Aura Reed",
+    user.stickerPackName || user.data?.stickerPackName || "Aura Reed",
   ).trim();
 
   const author = String(
@@ -175,10 +210,7 @@ export async function applyStickerMetadata(
     emojis: ["✨"],
   };
 
-  const jsonBuffer = Buffer.from(
-    JSON.stringify(json),
-    "utf8",
-  );
+  const jsonBuffer = Buffer.from(JSON.stringify(json), "utf8");
 
   /*
    * Estructura EXIF usada para metadata de stickers de WhatsApp.
@@ -191,21 +223,11 @@ export async function applyStickerMetadata(
    * NO colocar 0x16 en el byte 16.
    */
   const exifHeader = Buffer.from([
-    0x49, 0x49, 0x2a, 0x00,
-    0x08, 0x00, 0x00, 0x00,
-    0x01, 0x00,
-    0x41, 0x57,
-    0x07, 0x00,
-    0x00, 0x00,
-    0x00, 0x00,
-    0x16, 0x00,
-    0x00, 0x00,
+    0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x41, 0x57,
+    0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00,
   ]);
 
-  const exifBuffer = Buffer.concat([
-    exifHeader,
-    jsonBuffer,
-  ]);
+  const exifBuffer = Buffer.concat([exifHeader, jsonBuffer]);
 
   // El tamaño real del JSON se almacena en los bytes 14-17.
   exifBuffer.writeUInt32LE(jsonBuffer.length, 14);

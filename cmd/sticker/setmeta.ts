@@ -6,7 +6,8 @@ export default {
   description: "Configura el pack y autor de tus stickers.",
   async run({ args, db, sender, usedPrefix, reply }: any) {
     const user = db.getUser(sender);
-    const currentPack = user.stickerPackName || user.data?.stickerPackName || "Aura Reed";
+    const currentPack =
+      user.stickerPackName || user.data?.stickerPackName || "Aura Reed";
     const currentAuthor =
       user.stickerPackAuthor || user.data?.stickerPackAuthor || "Aura Reed";
     const raw = args.join(" ").trim();
