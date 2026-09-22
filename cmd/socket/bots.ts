@@ -79,8 +79,8 @@ async function resolveBotJid(
 
 function getBotStatus(bot: any): string {
 	return String(bot.status || "offline").toLowerCase() === "active"
-		? "🟢 ONLINE"
-		: "🔴 OFFLINE";
+		? "🟢 ON"
+		: "🔴 OFF";
 }
 
 export default {
@@ -127,7 +127,7 @@ export default {
 				const name = String(bot.bot_name || "Sub-Bot").trim();
 				text += `┃ ${index + 1}. ${fytBold(name)}\n`;
 				if (jid) {
-					text += `┃    @${number} ${getBotStatus(bot)}\n`;
+					text += `┃ > @${number} ${getBotStatus(bot)}\n\n`;
 					mentions.push(jid);
 				} else {
 					text += `┃    ${getBotStatus(bot)}\n`;
