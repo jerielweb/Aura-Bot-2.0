@@ -67,6 +67,10 @@ export async function toSticker(
   animated: boolean,
   maxDuration = 20,
 ): Promise<Buffer> {
+  if (isWebp(input)) {
+    return await imageToWebp(input, animated);
+  }
+
   if (!ffmpegPath) throw new Error("FFmpeg no está disponible.");
   const directory = process.env.TMPDIR || path.resolve("./cache");
   await mkdir(directory, { recursive: true });
@@ -76,12 +80,14 @@ export async function toSticker(
 
   try {
     await writeFile(inputPath, input);
+    // Cambiamos el color de relleno del pad a transparente puro asegurando canal alfa correcto
     const filter = animated
-      ? `format=rgba,scale=512:512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=0x000000@0,fps=20`
-      : "format=rgba,scale=512:512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=0x000000@0";
-    const args = ["-y", "-i", inputPath, "-vf", filter, "-c:v", "libwebp", "-an"];
-    if (animated) args.push("-loop", "0", "-t", String(maxDuration), "-q:v", "45");
-    else args.push("-q:v", "80");
+      ? `scale=512:512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=black@0,fps=20`
+      : `scale=512:512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=black@0`;
+    
+    const args = ["-y", "-i", inputPath, "-vf", filter, "-c:v", "libwebp", "-lossless", "0", "-q:v", "80", "-an"];
+    if (animated) args.push("-loop", "0", "-t", String(maxDuration));
+    
     args.push(outputPath);
     await execFileAsync(ffmpegPath, args, { timeout: 120000 });
     return await readFile(outputPath);
@@ -94,9 +100,9 @@ export async function toSticker(
 }
 
 export async function imageToWebp(buffer: Buffer, animated = false): Promise<Buffer> {
-  return sharp(buffer, animated ? { animated: true } : {})
+  return sharp(buffer, animated ? { animated: true, limitInputPixels: false } : { limitInputPixels: false })
     .resize(512, 512, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
-    .webp(animated ? { quality: 80, loop: 0 } : { quality: 80 })
+    .webp({ quality: 80, lossless: false, alphaQuality: 100, loop: animated ? 0 : undefined })
     .toBuffer();
 }
 
