@@ -11,7 +11,10 @@ export default {
     }
 
     const enabled = ["on", "true", "1"].includes(value);
-    ctx.db.setGroup(ctx.from, { self: enabled ? 1 : 0 });
+    ctx.db.setGroup(ctx.from, {
+      self: enabled ? 1 : 0,
+      selfConfigured: true,
+    });
     return ctx.reply(`✅ Modo self ${enabled ? "activado" : "desactivado"}.`);
   },
 };
