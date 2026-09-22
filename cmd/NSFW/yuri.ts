@@ -52,10 +52,10 @@ export default {
 			if (targetJid) {
 				const targetUser = db.getUser(targetJid);
 				const targetName = targetUser?.pushName || targetUser?.username || targetJid.split("@")[0];
-				caption = `\`${senderName}\` ${fytBold("en modo yuri con")} \`${targetName}\` 🌸🔥`;
+				caption = `\`${senderName}\` ${fytBold("está asiendo tijera con ")} \`${targetName}\` 🌸🔥`;
 				mentions = [sender, targetJid];
 			} else {
-				caption = `\`${senderName}\` ${fytBold("está en modo yuri")} 🌸`;
+				caption = `\`${senderName}\` ${fytBold("quiere aser tijera")} 🌸`;
 			}
 
 			await reply({
