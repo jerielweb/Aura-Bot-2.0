@@ -442,6 +442,9 @@ export async function handleMessage(
 
     const afterPrefix = isCmd ? body.slice(usedPrefix.length).trimStart() : "";
     const cmdName = isCmd ? afterPrefix.split(/\s+/)[0].toLowerCase() : "";
+    const rawText = isCmd
+      ? afterPrefix.slice(cmdName.length).replace(/^\s/, "")
+      : "";
     const args = isCmd
       ? afterPrefix.slice(cmdName.length).trim().split(/\s+/).filter(Boolean)
       : [];
@@ -768,6 +771,7 @@ export async function handleMessage(
       cmdName,
       args,
       text,
+      rawText,
       usedPrefix,
       modPrefix,
       isOwner,
