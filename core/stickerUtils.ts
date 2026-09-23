@@ -9,6 +9,8 @@ import sharp from "sharp";
 import WebP from "node-webpmux";
 
 const execFileAsync = promisify(execFile);
+const STICKER_MAX_SIZE = 1_000_000;
+const STICKER_TARGET_SIZE = 950_000;
 
 export function unwrapMediaMessage(message: any): any | null {
   if (!message) return null;
@@ -100,30 +102,60 @@ export async function toSticker(
   try {
     await writeFile(inputPath, input);
 
-    // Filtro robusto que maneja tanto imágenes estáticas como webps/videos animados asegurando canales de color visibles
-    const filter = animated
-      ? `scale=512:512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=black@0,fps=20`
-      : `scale=512:512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=black@0`;
+    const attempts = animated
+      ? [
+          { fps: 30, quality: 50, duration: Math.min(maxDuration, 20) },
+          { fps: 25, quality: 35, duration: Math.min(maxDuration, 15) },
+          { fps: 20, quality: 20, duration: Math.min(maxDuration, 10) },
+          { fps: 15, quality: 10, duration: Math.min(maxDuration, 8) },
+        ]
+      : [
+          { fps: 0, quality: 80, duration: 0 },
+          { fps: 0, quality: 60, duration: 0 },
+          { fps: 0, quality: 40, duration: 0 },
+          { fps: 0, quality: 20, duration: 0 },
+        ];
 
-    const args = [
-      "-y",
-      "-i",
-      inputPath,
-      "-vf",
-      filter,
-      "-c:v",
-      "libwebp",
-      "-lossless",
-      "0",
-      "-q:v",
-      "80",
-      "-an",
-    ];
-    if (animated) args.push("-loop", "0", "-t", String(maxDuration));
+    for (const attempt of attempts) {
+      const filter = animated
+        ? `format=rgba,scale=512:512:force_original_aspect_ratio=decrease,fps=${attempt.fps},pad=512:512:(ow-iw)/2:(oh-ih)/2:color=0x000000@0`
+        : "format=rgba,scale=512:512:force_original_aspect_ratio=decrease,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=0x000000@0";
+      const args = [
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-y",
+        "-i",
+        inputPath,
+        "-vf",
+        filter,
+        "-c:v",
+        "libwebp",
+        "-an",
+        "-q:v",
+        String(attempt.quality),
+      ];
+      if (animated) {
+        args.push(
+          "-loop",
+          "0",
+          "-t",
+          String(attempt.duration),
+          "-vsync",
+          "0",
+        );
+      }
+      args.push(outputPath);
 
-    args.push(outputPath);
-    await execFileAsync(ffmpegPath, args, { timeout: 120000 });
-    return await readFile(outputPath);
+      await execFileAsync(ffmpegPath, args, { timeout: 120000 });
+      const result = await readFile(outputPath);
+      if (result.length <= STICKER_TARGET_SIZE) return result;
+      await unlink(outputPath).catch(() => undefined);
+    }
+
+    throw new Error(
+      `El sticker supera el límite máximo de ${STICKER_MAX_SIZE / 1_000_000} MB.`,
+    );
   } finally {
     await Promise.all([
       unlink(inputPath).catch(() => undefined),
