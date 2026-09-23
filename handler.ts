@@ -1,6 +1,10 @@
 import chalk from "chalk";
 import { LRUCache } from "lru-cache";
-import { jidNormalizedUser } from "@whiskeysockets/baileys";
+import {
+  generateWAMessageFromContent,
+  jidNormalizedUser,
+  proto,
+} from "@whiskeysockets/baileys";
 import { cmdLog } from "./core/logger.ts";
 import {
   fytBold,
@@ -103,6 +107,25 @@ function cleanJid(jid = "") {
   const userPart = raw.slice(0, atIndex).split(":")[0];
   const domainPart = raw.slice(atIndex + 1);
   return `${userPart}@${domainPart}`;
+}
+
+function createNativeFlowNode() {
+  return {
+    tag: "biz",
+    attrs: {},
+    content: [
+      {
+        tag: "interactive",
+        attrs: { type: "native_flow", v: "1" },
+        content: [
+          {
+            tag: "native_flow",
+            attrs: { v: "9", name: "mixed" },
+          },
+        ],
+      },
+    ],
+  };
 }
 
 function botIdentityMatches(
@@ -788,6 +811,62 @@ export async function handleMessage(
           );
         }
       },
+      copy: async (
+        text: string,
+        copyCode: string,
+        buttonText = "📋 Copiar",
+        footer?: string,
+      ) => {
+        try {
+          const copyMessage = generateWAMessageFromContent(
+            from,
+            {
+              interactiveMessage: proto.Message.InteractiveMessage.create({
+                body: proto.Message.InteractiveMessage.Body.create({ text }),
+                footer: proto.Message.InteractiveMessage.Footer.create({
+                  text: footer || "",
+                }),
+                nativeFlowMessage:
+                  proto.Message.InteractiveMessage.NativeFlowMessage.create({
+                    messageParamsJson: JSON.stringify({}),
+                    buttons: [
+                      {
+                        name: "cta_copy",
+                        buttonParamsJson: JSON.stringify({
+                          id: "copy_code",
+                          display_text: buttonText,
+                          copy_code: copyCode,
+                        }),
+                      },
+                    ],
+                    messageVersion: 2,
+                  }),
+              }),
+            } as any,
+            {
+              userJid: sock.user?.id || from,
+              quoted: msg,
+            },
+          );
+          return await sock.relayMessage(from, copyMessage.message, {
+            messageId: copyMessage.key.id || undefined,
+            additionalNodes: [createNativeFlowNode()],
+          });
+        } catch (e: any) {
+          logger.warn?.(
+            `[${botLabel}] copy falló: ${e?.message || e} | from: ${from}`,
+          );
+          return await sock.sendMessage(
+            from,
+            {
+              text: `${text}\n\n🔑 Código: *${copyCode}*`,
+              footer: footer || "",
+            },
+            { quoted: msg },
+          );
+        }
+      },
+      getPlugins: resolvePlugins,
       getPluginCategories: () => [
         ...new Set(
           [...pluginMap.values()]

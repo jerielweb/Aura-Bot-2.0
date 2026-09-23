@@ -1,4 +1,5 @@
 import { requestSubBotLink } from "../../core/subbotManager.ts";
+import { IS_SUBBOT_ONLINE, fytBold } from "../../core/socketText.ts";
 
 export default {
   name: ["code", "pairingcode", "vincularcode"],
@@ -6,14 +7,28 @@ export default {
   category: "socket",
   ownerOnly: false,
 
-  async run({ args, sender, reply }: any) {
-    await reply({ text: "⏳ Preparando el código de vinculación..." });
+  async run({ args, sender, reply, copy }:{args: string[], sender: string, reply: any, copy: any}) {
+    let paringCodeText = `╭〔 📲 𝐈𝐍𝐒𝐓𝐑𝐔𝐂𝐂𝐈𝐎𝐍𝐄𝐒 〕⬣\n┃ 1. Sal a tu menú de chats\n┃ 2. Toca el botón \`⋮\`\n┃ 3. Ve a \`dispositivos\`\n┃ 4. Toca \`vincular dispositivo\`\n┃ 5. Toca \`vincular con código\`\n┃ 6. Espera y confirma conexión\n╰━━━━━━━━━━━━⬣
+    `
+    const tagUser = sender.includes("@") ? sender.split("@")[0] : sender;
+
+    await reply({
+      text: `╭〔 ⚡ 𝐏𝐑𝐄𝐏𝐀𝐑𝐀𝐂𝐈𝐎́𝐍 〕⬣\n┃ Hola @${tagUser}\n┃ ya casi recibes el\n┃ código de vinculación\n╰━━━━━━━━━━━━⬣`,
+      mentions: [sender],
+    });
     await requestSubBotLink({
       requester: sender,
       method: "code",
       phoneNumber: args[0],
-      onPairingCode: (code) =>
-        reply({ text: `🔑 Código de vinculación del subbot: *${code}*` }),
+      onPairingCode: async (code) => {
+        const messageText =
+          paringCodeText +
+          `\n╭〔 🔑 ${fytBold("TU CODIGO")} 〕⬣\n┃ ${code}\n╰━━━━━━━━━━━━⬣`;
+
+        await copy(messageText, code, "📋 Copiar código");
+      },
+      onConnected: () =>
+        reply({ text: IS_SUBBOT_ONLINE({prefix: "."}) }),
       onPairingError: (error) =>
         reply({
           text: `❌ WhatsApp rechazó la solicitud del código: ${error.message}`,

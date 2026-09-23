@@ -7,6 +7,7 @@ type LinkRequest = {
   phoneNumber?: string;
   onQr?: (qr: string) => Promise<void> | void;
   onPairingCode?: (code: string) => Promise<void> | void;
+  onConnected?: () => Promise<void> | void;
   onPairingError?: (error: Error) => Promise<void> | void;
   onPairingExpired?: () => Promise<void> | void;
 };
@@ -54,6 +55,7 @@ export async function requestSubBotLink(request: LinkRequest) {
     pairingTimeoutMs: 60_000,
     onQr: request.onQr,
     onPairingCode: request.onPairingCode,
+    onConnected: request.onConnected,
     onPairingError: async (error) => {
       activeSubBots.delete(sessionName);
       db.deleteBot(sessionName);

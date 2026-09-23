@@ -32,6 +32,7 @@ export type ConnectionOptions = {
   pairingTimeoutMs?: number;
   onQr?: (qr: string) => Promise<void> | void;
   onPairingCode?: (code: string) => Promise<void> | void;
+  onConnected?: () => Promise<void> | void;
   onPairingError?: (error: Error) => Promise<void> | void;
   onPairingExpired?: () => Promise<void> | void;
 };
@@ -372,6 +373,7 @@ export async function connectToWhatsApp(
         `WhatsApp conectado correctamente. JID: ${mainNum}`,
         "alert",
       );
+      await options.onConnected?.();
       return;
     }
 

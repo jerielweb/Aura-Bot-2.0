@@ -158,3 +158,12 @@ export const NOT_PREMIUM = () => {
 ┃ > Este comando solo puede ser usado
 ┃ > por los usuarios premium del bot.`;
 };
+
+export const IS_SUBBOT_ONLINE = ({prefix}: {prefix?: string} ) => {
+  return `╭〔  ${fytBold("AURA REED")}〕⬣
+┃ ✅${fytBold("SUB-BOT EN LÍNEA")}
+╰━━━━━━━━━━━━⬣
+┃ > El sub-bot ya está en línea y conectado a WhatsApp.
+┃ > cuando quieras desvincular escriba \`${prefix}logout\`
+┃ > para cerrar la sesión del sub-bot.`;
+}

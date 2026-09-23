@@ -1,5 +1,6 @@
 import qr from "qr-image";
 import { requestSubBotLink } from "../../core/subbotManager.ts";
+import { IS_SUBBOT_ONLINE } from "../../core/socketText.ts";
 
 export default {
   name: ["qr", "vincularqr"],
@@ -17,6 +18,8 @@ export default {
           image: qr.imageSync(value, { type: "png" }),
           caption: "📱 Escanea este QR para vincular el subbot.",
         }),
+      onConnected: () =>
+        reply({ text: IS_SUBBOT_ONLINE({prefix: "."}) }),
     });
   },
 };
