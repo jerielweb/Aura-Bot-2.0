@@ -7,16 +7,7 @@ export default {
   description: "Reacción NSFW de blowjob.",
   category: "nsfw",
 
-  async run({ args, reply, react, msg, from, sender, text, db, isGroup }: any) {
-    const groupData = db.getGroup(from);
-    if (isGroup && !groupData?.nsfwMode) {
-      await react("🔞");
-      return reply({
-        text: `🔞 ${fytBold("NSFW desactivado")} en este grupo.\n┃ > Un admin puede activarlo con: .nsfw on`,
-      });
-    }
-
-    await react("🍆");
+  await react("🍆");
 
     try {
       let targetJid = null;
