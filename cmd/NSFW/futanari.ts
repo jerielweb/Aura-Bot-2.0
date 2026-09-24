@@ -6,7 +6,7 @@ export default {
   name: ["futanari", "futa"],
   description: "Reacción NSFW futanari.",
   category: "nsfw",
-
+run: async ({ msg, text, sender, db, reply, react }: any) => {
     await react("🍆");
 
     try {
