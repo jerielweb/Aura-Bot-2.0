@@ -6,9 +6,9 @@ export default {
   name: ["bondage", "atar"],
   description: "Reacción NSFW de bondage.",
   category: "nsfw",
+run: async ({ msg, text, sender, db, reply, react }: any) => {
 
-
-    await react("⛓️");
+await react("⛓️");
 
     try {
       let targetJid = null;
