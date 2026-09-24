@@ -6,7 +6,7 @@ export default {
   name: ["yaoi"],
   description: "Reacción NSFW yaoi.",
   category: "nsfw",
-
+run: async ({ msg, text, sender, db, reply, react }: any) => {
     await react("💙");
 
     try {
