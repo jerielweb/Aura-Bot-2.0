@@ -6,7 +6,7 @@ export default {
   name: ["sixnine", "69"],
   description: "Reacción NSFW de 69.",
   category: "nsfw",
-
+run: async ({ msg, text, sender, db, reply, react }: any) => {
     await react("🔄");
 
     try {
