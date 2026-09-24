@@ -6,7 +6,7 @@ export default {
   name: ["spank", "nalgada"],
   description: "Reacción NSFW de nalgada.",
   category: "nsfw",
-
+run: async ({ msg, text, sender, db, reply, react }: any) => {
     await react("🍑");
 
     try {
