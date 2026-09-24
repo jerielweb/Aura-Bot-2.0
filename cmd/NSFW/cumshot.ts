@@ -6,9 +6,8 @@ export default {
   name: ["cumshot", "venirse"],
   description: "Reacción NSFW de cumshot.",
   category: "nsfw",
-
-  
-    await react("💦");
+run: async ({ msg, text, sender, db, reply, react }: any) => {
+   await react("💦");
 
     try {
       let targetJid = null;
