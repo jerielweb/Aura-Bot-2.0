@@ -6,8 +6,8 @@ export default {
   name: ["blowjob", "mamar", "oral"],
   description: "Reacción NSFW de blowjob.",
   category: "nsfw",
-
-  await react("🍆");
+  run: async ({ msg, text, sender, db, reply, react }: any) => {
+    await react("🍆");
 
     try {
       let targetJid = null;
@@ -40,7 +40,7 @@ export default {
       });
 
       const bodyText = await response.body.text();
-      if (response.statusCode !== 200)
+      if (response.statusCode!== 200)
         throw new Error(`HTTP ${response.statusCode}`);
 
       let data: any;
@@ -50,7 +50,7 @@ export default {
         throw new Error("Respuesta no es JSON");
       }
 
-      if (!data?.status || !data?.result)
+      if (!data?.status ||!data?.result)
         throw new Error("API no devolvió resultado válido");
 
       let caption = "";
