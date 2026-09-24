@@ -143,6 +143,10 @@ export default {
       runtimeDb?.getBot?.(sock.user?.id)?.data?.customBanner ??
       runtimeDb?.customBanner ??
       null;
+    const customAudio =
+      runtimeDb?.getBot?.(sock.user?.id)?.data?.customAudio ??
+      runtimeDb?.customAudio ??
+      null;
     if (customBanner?.path && existsSync(customBanner.path)) {
       bannerPath = customBanner.path;
       isGif = Boolean(
@@ -210,5 +214,17 @@ export default {
     await sock.relayMessage(remoteJid, waMsg.message, {
       messageId: waMsg.key.id,
     });
+
+    if (customAudio?.path && existsSync(customAudio.path)) {
+      await sock.sendMessage(
+        remoteJid,
+        {
+          audio: readFileSync(customAudio.path),
+          mimetype: "audio/ogg; codecs=opus",
+          ptt: true,
+        },
+        { quoted: msg },
+      );
+    }
   },
 };

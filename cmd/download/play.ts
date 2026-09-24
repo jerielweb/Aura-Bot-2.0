@@ -1,6 +1,12 @@
 import { request } from "undici";
+import {
+  generateWAMessageFromContent,
+  prepareWAMessageMedia,
+} from "@whiskeysockets/baileys";
 import { fytBold } from "../../core/socketText.ts";
 import { DL_CONFIG } from "../../config.ts";
+import { createLinkPreviewWithoutChannel } from "../../core/LinkPreview.ts";
+import { downloadBuffer } from "../../core/downloadUtils.ts";
 
 const API_KEY = DL_CONFIG.alya.API_KEY;
 const BASE_URL = DL_CONFIG.alya.BASE_URL.replace(/\/+$/, "");
@@ -118,10 +124,10 @@ function fomatViewers(valor) {
 }
 
 export default {
-  name: ["play", "ytplay", "ytaudio"],
+  name: ["play", "ytmp3", "ytaudio", "playaudio", "playmp3", "ytmusic", "yta"],
   description: "Busca y descarga audio de YouTube.",
   category: "download",
-  async run({ args, reply, react }: any) {
+  async run({ args, reply, react, sock, from, msg, sender }: any) {
     const query = args.join(" ").trim();
     if (!query)
       return reply(
@@ -155,23 +161,45 @@ export default {
         ? `https://youtu.be/${videoId}`
         : result.url || finalUrl;
 
-      let caption = `╭〔 🎵 ${fytBold("YOUTUBE PLAY")} 〕━⬣\n\n`;
-      caption += `┃ ➥ ${fytBold(title)}\n\n`;
+      let caption = `┃ ➥ ${fytBold(title)}\n\n`;
       caption += `┣━━━━━━━━━━━━⬣\n`;
       caption += `┃ > ${fytBold("Canal")} › ${author}\n`;
       caption += `┃ > ${fytBold("Duración")} › ${duration}\n`;
       caption += `┃ > ${fytBold("Vistas")} › ${fomatViewers(views)}\n`;
       caption += `┃ > ${fytBold("Calidad")} › ${quality}\n`;
       caption += `┃ > ${fytBold("Url")} › ${youtubeUrl}\n`;
-      caption += `┣━━━━━━━━━━━━⬣\n`;
-      caption += `┃ > ⌛ Descargando audio...\n`;
       caption += `╰━━〔 ⚡ ${fytBold("SYSTEM ACTIVE")} 〕━━⬣`;
 
       const thumbnail = videoId
         ? audio.thumbnail || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
         : audio.thumbnail || result.banner;
       if (thumbnail) {
-        await reply({ image: { url: thumbnail }, caption });
+        const thumbnailBuffer = await downloadBuffer(thumbnail, 30000);
+        const prepared = await prepareWAMessageMedia(
+          { image: thumbnailBuffer },
+          {
+            upload: sock.waUploadToServer,
+            mediaTypeOverride: "thumbnail-link",
+          },
+        );
+        const preview = createLinkPreviewWithoutChannel({
+          textOriginal: caption,
+          link: youtubeUrl,
+          author,
+          title,
+          banner: prepared.imageMessage,
+          mentionedJid: [sender],
+          isForwarded: false,
+          forwardingScore: 0,
+        });
+        const previewMessage = generateWAMessageFromContent(
+          from,
+          preview,
+          { quoted: msg, userJid: sock.user?.id },
+        );
+        await sock.relayMessage(from, previewMessage.message, {
+          messageId: previewMessage.key.id,
+        });
       } else {
         await reply({ text: caption });
       }

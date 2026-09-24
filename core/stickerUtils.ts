@@ -104,8 +104,9 @@ export async function toSticker(
 
     const attempts = animated
       ? [
-          { fps: 30, quality: 50, duration: Math.min(maxDuration, 20) },
-          { fps: 25, quality: 35, duration: Math.min(maxDuration, 15) },
+          { fps: 30, quality: 60, duration: Math.min(maxDuration, 20) },
+          { fps: 25, quality: 30, duration: Math.min(maxDuration, 15) },
+          { fps: 25, quality: 25, duration: Math.min(maxDuration, 15) },
           { fps: 20, quality: 20, duration: Math.min(maxDuration, 10) },
           { fps: 15, quality: 10, duration: Math.min(maxDuration, 8) },
         ]
