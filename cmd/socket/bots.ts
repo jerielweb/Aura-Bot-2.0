@@ -118,7 +118,7 @@ export default {
     text += `┃ 📊 ${fytBold("Activos")}: *${bots.length}*\n`;
     if (isGroup) {
       text += `┃ ⚡ ${fytBold("En este grupo")}: *${visibleBots.length}*\n`;
-      text += `┣━━━━━━━━━━━━⬣\n`;
+      text += `┣━━━━━━━━━━━━⬣\n\n`;
     }
     text += `\n`;
 
