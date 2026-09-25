@@ -26,7 +26,8 @@ export default {
       if (!response?.status || !download)
         throw new Error("No se pudo obtener el audio.");
       const title = song.title || "Spotify";
-      const caption = `╭〔 🎵 ${fytBold("SPOTIFY DOCUMENT")} 〕━⬣\n\n┃ ➥ ${fytBold(title)}\n\n┣━━━━━━━━━━━━⬣\n┃ > ${fytBold("Artista")} › ${song.artist || "Desconocido"}\n┃ > ${fytBold("Álbum")} › ${song.album || "Desconocido"}\n┃ > ${fytBold("Tipo")} › Documento MP3\n┣━━━━━━━━━━━━⬣\n┃ ⏳ Descargando documento...\n╰━━〔 ⚡ ${fytBold("SYSTEM ACTIVE")} 〕━━⬣`;
+      const originalUrl = song.url || (isUrl ? query.split("?")[0] : `https://open.spotify.com/search/${encodeURIComponent(title)}`);
+      const caption = `╭〔 🎵 ${fytBold("SPOTIFY DOCUMENT")} 〕━⬣\n\n┃ ➥ ${fytBold(title)}\n\n┣━━━━━━━━━━━━⬣\n┃ > ${fytBold("Artista")} › ${song.artist || "Desconocido"}\n┃ > ${fytBold("Álbum")} › ${song.album || "Desconocido"}\n┃ > ${fytBold("Tipo")} › Documento MP3\n┃ > ${fytBold("Url")} › ${originalUrl}\n┣━━━━━━━━━━━━⬣\n┃ ⏳ Descargando documento...\n╰━━〔 ⚡ ${fytBold("SYSTEM ACTIVE")} 〕━━⬣`;
       const cover = song.coverHd || song.cover;
       const hasPreview = cover
         ? await sendDownloadPreview({
@@ -35,9 +36,7 @@ export default {
             msg,
             thumbnail: cover,
             caption,
-            link: isUrl
-              ? query.split("?")[0]
-              : `https://open.spotify.com/search/${encodeURIComponent(title)}`,
+            link: originalUrl,
             title,
             author: song.artist || "Spotify",
             sender,

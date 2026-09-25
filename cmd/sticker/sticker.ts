@@ -13,7 +13,7 @@ export default {
 	name: ["s", "sticker", "stiker"],
 	category: "sticker",
 	description: "Convierte imágenes, videos o GIFs en stickers con efectos y formas.",
-	async run({ sock, msg, from, sender, db, usedPrefix, react, reply, args }: any) {
+	async run({ sock, msg, from, sender, db, usedPrefix, react, reply, args, cmdName }: any) {
 		// Ayuda
 		if (args[0] === "-list" || args[0] === "-help" || args[0] === "-ayuda") {
 			return reply({ text: generateStickerHelp(usedPrefix) });
@@ -25,7 +25,7 @@ export default {
 
 		if (!target) {
 			return reply({
-				text: `╭〔 ⚠️ ${fytBold("AURA REED")} 〕⬣\n┃ ❌ ${fytBold("FALTA MEDIO")}\n╰━━━━━━━━━━━━⬣\n\n┃ > Envía una imagen/video con ${usedPrefix}s\n┃ > o responde a un medio con ${usedPrefix}s.\n\n╰〔 ⚡ ${fytBold("SYSTEM")} 〕⬣`,
+				text: `╭〔 ⚠️ ${fytBold("AURA REED")} 〕⬣\n┃ ❌ ${fytBold("FALTA MEDIO")}\n╰━━━━━━━━━━━━⬣\n\n┃ > Envía una imagen/video con ${usedPrefix}s\n┃ > o responde a un medio con ${usedPrefix}s.\n┃ > Para ver propiedades ejecuta \`${usedPrefix}${cmdName}\`\n╰〔 ⚡ ${fytBold("SYSTEM")} 〕⬣`,
 			});
 		}
 
