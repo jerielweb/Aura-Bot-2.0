@@ -151,9 +151,9 @@ export function formatProfile(
     `┃ ✨ ${fytBold("Puntos Aura")} › ${formatCompact(xp)}`,
     `┃ 💵 ${fytBold("Cartera")} › ₡${formatCompact(wallet)}`,
     `┃ 🏦 ${fytBold("Banco")} › ₡${formatCompact(bank)}`,
-    `${PROFILE_REPOSITORY_URL}`,
     "",
     `╰〔 ⚡ ${fytBold("AURA REED")} 〕⬣`,
+     `${PROFILE_REPOSITORY_URL}`,
   ].join("\n");
 
   return { text, mentions };
