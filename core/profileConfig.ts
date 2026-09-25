@@ -129,6 +129,7 @@ export function formatProfile(
   const userId = `WB${jid.split("@")[0]}`;
 
   const text = [
+    `${PROFILE_REPOSITORY_URL}`,
     `╭〔 👤 ${fytBold("PERFIL")} 〕⬣`,
     `┃ 📋 ${fytBold("SOBRE")} @${about}`,
     "╰━━━━━━━━━━━━⬣",
@@ -153,7 +154,6 @@ export function formatProfile(
     `┃ 🏦 ${fytBold("Banco")} › ₡${formatCompact(bank)}`,
     "",
     `╰〔 ⚡ ${fytBold("AURA REED")} 〕⬣`,
-     `${PROFILE_REPOSITORY_URL}`,
   ].join("\n");
 
   return { text, mentions };
