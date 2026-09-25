@@ -132,7 +132,7 @@ export default {
         const number = getBotNumber(bot, jid);
         const name = String(bot.bot_name || "Sub-Bot").trim();
 
-        text += `┏━━━━〔 ${getBotType(bot)} 〕━━━⬣\n`;
+        text += `┏━━〔 ${fytBold(getBotType(bot))} 〕━━━⬣\n`;
         text += `┃ > @${number}\n`;
         text += `┃ ➪ ${fytBold(name)}\n`;
         text += `┗━━━━━━━━━━━━⬣\n\n`;
