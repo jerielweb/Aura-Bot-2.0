@@ -83,7 +83,7 @@ async function resolveBotJid(
 }
 
 function getBotType(bot: any): string {
-  return Number(bot.isMain) === 1 ? "Main" : "SuB-Bot";
+  return Number(bot.isMain) === 1 ? "Main-Bot" : "SuB-Bot";
 }
 
 export default {
@@ -112,7 +112,7 @@ export default {
       );
     }
 
-    let text = `╭〔 🔌 ${fytBold("AURA REED")} 〕⬣\n`;
+    let text = `╭〔 🔌 ${fytBold("SOCKET SYSTEM")} 〕⬣\n`;
     text += `┃ 🤖 ${fytBold(isGroup ? "BOTS ACTIVOS EN EL GRUPO" : "BOTS ACTIVOS")}\n`;
     text += `┣━━━━━━━━━━━━⬣\n`;
     text += `┃ 📊 ${fytBold("Activos")}: *${bots.length}*\n`;
@@ -143,7 +143,7 @@ export default {
     }
 
     text += `\n┣━━━━━━━━━━━━⬣\n`;
-    text += `┃ 💡 Usa ${usedPrefix || "."}bots para consultar nuevamente\n`;
+    text += `┃ 💡 Usa ${usedPrefix || "."}code o ${usedPrefix || "."}qr  para ser bot\n`;
     text += `╰〔 ⚡ ${fytBold("SYSTEM")} 〕⬣`;
 
     return reply({ text, mentions });
