@@ -127,18 +127,16 @@ export default {
         ? `┃ > No hay bots registrados en este grupo.\n`
         : `┃ > No hay bots registrados.\n`;
     } else {
-      for (const [index, bot] of visibleBots.entries()) {
+      for (const bot of visibleBots) {
         const jid = await resolveBotJid(bot, participants, resolveLid);
         const number = getBotNumber(bot, jid);
-        const name = String(bot.bot_name || "\u00A0Sub-Bot").trim();
+        const name = String(bot.bot_name || "Sub-Bot").trim();
 
-        text += `┃ ${index + 1}. @${number}\n`;
-        text += `┃ ✦ ${fytBold(name)}\n`;
+        text += `┏━${getBotType(bot)}\n`;
+        text += `┃ > @${number}\n`;
+        text += `┃ ➪ ${fytBold(name)}\n\n`;
         if (jid) {
-          text += `┗━${getBotType(bot)}\n\n`;
           mentions.push(jid);
-        } else {
-          text += `┗━${getBotType(bot)}\n\n`;
         }
       }
     }
