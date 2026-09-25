@@ -25,7 +25,7 @@ export default {
 
 		if (!target) {
 			return reply({
-				text: `╭〔 ⚠️ ${fytBold("AURA REED")} 〕⬣\n┃ ❌ ${fytBold("FALTA MEDIO")}\n╰━━━━━━━━━━━━⬣\n\n┃ > Envía una imagen/video con ${usedPrefix}s\n┃ > o responde a un medio con ${usedPrefix}s.\n┃ > Para ver propiedades ejecuta \`${usedPrefix}${cmdName}\`\n╰〔 ⚡ ${fytBold("SYSTEM")} 〕⬣`,
+				text: `╭〔 ⚠️ ${fytBold("AURA REED")} 〕⬣\n┃ ❌ ${fytBold("FALTA MEDIO")}\n╰━━━━━━━━━━━━⬣\n\n┃ > Envía una imagen/video con ${usedPrefix}s\n┃ > o responde a un medio con ${usedPrefix}s.\n┃ > Para ver propiedades ejecuta \`${usedPrefix}${cmdName} -list\`\n╰〔 ⚡ ${fytBold("SYSTEM")} 〕⬣`,
 			});
 		}
 
