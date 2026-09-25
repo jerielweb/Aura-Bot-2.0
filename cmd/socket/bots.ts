@@ -134,7 +134,8 @@ export default {
 
         text += `┏━${getBotType(bot)}\n`;
         text += `┃ > @${number}\n`;
-        text += `┃ ➪ ${fytBold(name)}\n\n`;
+        text += `┃ ➪ ${fytBold(name)}\n`;
+        text += `┗━━━━━━━━━━━━⬣\n`;
         if (jid) {
           mentions.push(jid);
         }
