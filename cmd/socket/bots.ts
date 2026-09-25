@@ -132,10 +132,10 @@ export default {
         const number = getBotNumber(bot, jid);
         const name = String(bot.bot_name || "Sub-Bot").trim();
 
-        text += `┏━${getBotType(bot)}\n`;
+        text += `┏━━━━〔 ${getBotType(bot)} 〕━━━⬣\n`;
         text += `┃ > @${number}\n`;
         text += `┃ ➪ ${fytBold(name)}\n`;
-        text += `┗━━━━━━━━━━━━⬣\n`;
+        text += `┗━━━━━━━━━━━━⬣\n\n`;
         if (jid) {
           mentions.push(jid);
         }
