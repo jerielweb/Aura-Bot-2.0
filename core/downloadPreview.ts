@@ -15,6 +15,7 @@ type DownloadPreviewOptions = {
   title: string;
   author?: string;
   sender?: string;
+  mentions?: string[];
 };
 
 export async function sendDownloadPreview({
@@ -27,6 +28,7 @@ export async function sendDownloadPreview({
   title,
   author = "",
   sender,
+  mentions = [],
 }: DownloadPreviewOptions): Promise<boolean> {
   try {
     const thumbnailBuffer = await downloadBuffer(thumbnail, 30000);
@@ -37,13 +39,18 @@ export async function sendDownloadPreview({
         mediaTypeOverride: "thumbnail-link",
       },
     );
+
+    const allMentions = Array.from(
+      new Set([...(sender ? [sender] : []), ...mentions]),
+    );
+
     const preview = createLinkPreviewWithoutChannel({
       textOriginal: caption,
       link,
       author,
       title,
       banner: prepared.imageMessage,
-      mentionedJid: sender ? [sender] : [],
+      mentionedJid: allMentions,
       isForwarded: false,
       forwardingScore: 0,
     });

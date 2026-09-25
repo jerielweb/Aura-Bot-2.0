@@ -104,11 +104,19 @@ export async function profileTarget(ctx: any): Promise<string> {
   return target;
 }
 
-export function formatProfile(jid: string, profile = getProfile(jid)): string {
+export function formatProfile(
+  jid: string,
+  profile = getProfile(jid),
+): { text: string; mentions: string[] } {
   const about = jid.split("@")[0];
-  const spouse = profile.marriedTo
-    ? `@${String(profile.marriedTo).split("@")[0]}`
-    : "Soltero/a";
+  const mentions: string[] = [jid];
+
+  let spouse = "Soltero/a";
+  if (profile.marriedTo) {
+    spouse = `@${String(profile.marriedTo).split("@")[0]}`;
+    mentions.push(profile.marriedTo);
+  }
+
   const age = getAge(String(profile.birthDate ?? ""));
   const aura = Number(profile.aura ?? 0);
   const xp = Number(profile.auraXp ?? aura);
@@ -120,8 +128,7 @@ export function formatProfile(jid: string, profile = getProfile(jid)): string {
   const bank = Number(profile.banco ?? profile.bank ?? 0);
   const userId = `WB${jid.split("@")[0]}`;
 
-  return [
-    `${PROFILE_REPOSITORY_URL}`,
+  const text = [
     `╭〔 👤 ${fytBold("PERFIL")} 〕⬣`,
     `┃ 📋 ${fytBold("SOBRE")} @${about}`,
     "╰━━━━━━━━━━━━⬣",
@@ -144,15 +151,18 @@ export function formatProfile(jid: string, profile = getProfile(jid)): string {
     `┃ ✨ ${fytBold("Puntos Aura")} › ${formatCompact(xp)}`,
     `┃ 💵 ${fytBold("Cartera")} › ₡${formatCompact(wallet)}`,
     `┃ 🏦 ${fytBold("Banco")} › ₡${formatCompact(bank)}`,
+    `${PROFILE_REPOSITORY_URL}`,
     "",
     `╰〔 ⚡ ${fytBold("AURA REED")} 〕⬣`,
   ].join("\n");
+
+  return { text, mentions };
 }
 
 export async function sendProfilePreview(ctx: any, target: string) {
   const profile = getProfile(target);
   const economy = economyUser(ctx, target);
-  const text = formatProfile(target, {
+  const { text, mentions } = formatProfile(target, {
     ...profile,
     bolsillo: economy.bolsillo,
     banco: economy.banco,
@@ -170,16 +180,17 @@ export async function sendProfilePreview(ctx: any, target: string) {
       title: "Aura Bot 2.0",
       author: "Jeriel Web",
       sender: target,
+      mentions,
     });
     if (hasPreview) return;
 
     return ctx.sock.sendMessage(
       ctx.from,
-      { image: { url: profileUrl }, caption: text, mentions: [target] },
+      { image: { url: profileUrl }, caption: text, mentions },
       { quoted: ctx.msg },
     );
   } catch {
-    return ctx.reply({ text, mentions: [target] });
+    return ctx.reply({ text, mentions });
   }
 }
 
