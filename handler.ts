@@ -724,7 +724,32 @@ export async function handleMessage(
 
     logger.message?.(logPayload);
 
+    const resolvePlugins = runtimeOptions.getPlugins ?? (() => plugins);
+    const pluginMap = resolvePlugins();
+
     if (!isCmd) {
+      const hangman = pluginMap.get("ahorcado");
+      if (hangman?.handleReply) {
+        const reply = async (content: any) => {
+          if (typeof content === "string") content = { text: content };
+          return sock.sendMessage(from, content, { quoted: msg });
+        };
+        const handled = await hangman.handleReply({
+          sock,
+          msg,
+          from,
+          body,
+          sender,
+          botJid,
+          db: runtimeDb,
+          usedPrefix: prefixes[0] ?? ".",
+          reply,
+          react: async (emoji: string) =>
+            sock.sendMessage(from, { react: { text: emoji, key: msg.key } }),
+        });
+        if (handled) return;
+      }
+
       if (
         isGroup &&
         (await handleGroupToxic(
@@ -740,8 +765,6 @@ export async function handleMessage(
       return;
     }
 
-    const resolvePlugins = runtimeOptions.getPlugins ?? (() => plugins);
-    const pluginMap = resolvePlugins();
     const plugin = pluginMap.get(cmdName);
 
     if (!plugin) {
@@ -815,12 +838,7 @@ export async function handleMessage(
           );
         }
       },
-      copy: async (
-        text: string,
-        copyCode: string,
-        buttonText = "📋 Copiar",
-        footer?: string,
-      ) => {
+      copy: async ( text: string, copyCode: string, buttonText = "📋 Copiar", footer?: string,) => {
         try {
           const copyMessage = generateWAMessageFromContent(
             from,

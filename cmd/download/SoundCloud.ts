@@ -1,5 +1,11 @@
 import { request } from "undici";
+import {
+  generateWAMessageFromContent,
+  prepareWAMessageMedia,
+} from "@whiskeysockets/baileys";
 import { fytBold } from "../../core/socketText.ts";
+import { downloadBuffer } from "../../core/downloadUtils.ts";
+import { createLinkPreviewWithoutChannel } from "../../core/LinkPreview.ts";
 
 let cachedClientId: string | null = null;
 let cachedAt = 0;
@@ -125,7 +131,7 @@ export default {
   description: "Descarga canciones de SoundCloud.",
   category: "download",
 
-  async run({ args, reply, react }: any) {
+  async run({ args, reply, react, sock, from, msg, sender }: any) {
     const query = args.join(" ").trim();
     if (!query) {
       return reply({
@@ -174,11 +180,38 @@ export default {
       caption += `┃ > ${fytBold("Likes")} › ${formatNumber(track.likes_count)}\n`;
       caption += `┃ > ${fytBold("Tipo")} › Audio MP3\n`;
       caption += `┃ > ${fytBold("URL")} › ${track.permalink_url || query}\n`;
-      caption += `┣━━━━━━━━━━━━⬣\n┃ ✅ Audio listo.\n╰━━〔 ⚡ ${fytBold("SYSTEM ACTIVE")} 〕━━⬣`;
+      caption += `┣━━━━━━━━━━━━⬣\n┃ ⏳️ Descargando Audio...\n╰━━〔 ⚡ ${fytBold("SYSTEM ACTIVE")} 〕━━⬣`;
 
       const thumbnail = track.artwork_url?.replace("large", "t500x500");
-      if (thumbnail) await reply({ image: { url: thumbnail }, caption });
-      else await reply({ text: caption });
+      if (thumbnail) {
+        const thumbnailBuffer = await downloadBuffer(thumbnail, 30000);
+        const prepared = await prepareWAMessageMedia(
+          { image: thumbnailBuffer },
+          {
+            upload: sock.waUploadToServer,
+            mediaTypeOverride: "thumbnail-link",
+          },
+        );
+        const preview = createLinkPreviewWithoutChannel({
+          textOriginal: caption,
+          link: track.permalink_url || query,
+          author: track.user?.username || "SoundCloud",
+          title: track.title || "SoundCloud",
+          banner: prepared.imageMessage,
+          mentionedJid: sender ? [sender] : [],
+          isForwarded: false,
+          forwardingScore: 0,
+        });
+        const previewMessage = generateWAMessageFromContent(from, preview, {
+          quoted: msg,
+          userJid: sock.user?.id,
+        });
+        await sock.relayMessage(from, previewMessage.message, {
+          messageId: previewMessage.key.id,
+        });
+      } else {
+        await reply({ text: caption });
+      }
 
       await reply({
         audio: { url: audioUrl },

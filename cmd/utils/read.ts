@@ -1,5 +1,6 @@
 import { downloadMediaMessage } from "@whiskeysockets/baileys";
 import { fytBold } from "../../core/socketText.ts";
+import { sendMessageWithRateLimit } from "../../core/mediaSendUtils.ts";
 
 function unwrapMessage(message: any): any {
   if (!message) return null;
@@ -36,8 +37,8 @@ export default {
       const quoted = { key: { remoteJid: from, id: context?.stanzaId || msg.key.id, participant: context?.participant }, message: quotedMessage };
       const originalCaption = getMediaCaption(target);
       const caption = originalCaption || `🔁 ${fytBold(target.imageMessage ? "Aquí tienes la imagen" : "Aquí tienes el video")}`;
-      if (target.imageMessage) await sock.sendMessage(from, { image: buffer, caption }, { quoted });
-      else if (target.videoMessage) await sock.sendMessage(from, { video: buffer, caption }, { quoted });
+      if (target.imageMessage) await sendMessageWithRateLimit(sock, from, { image: buffer, caption }, { quoted });
+      else if (target.videoMessage) await sendMessageWithRateLimit(sock, from, { video: buffer, caption }, { quoted });
       else throw new Error("Solo se admiten imágenes y videos.");
       await react("✅");
     } catch (error: any) {

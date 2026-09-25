@@ -21,7 +21,34 @@ function isRateLimitError(error: any): boolean {
   if (status === 429) return true;
 
   const text = String(error?.message || error?.data?.message || "").toLowerCase();
-  return text.includes("429") || text.includes("rate") || text.includes("too many");
+  return (
+    text.includes("429") ||
+    text.includes("rate") ||
+    text.includes("too many") ||
+    text.includes("overlimit")
+  );
+}
+
+export async function sendMessageWithRateLimit(
+  socket: any,
+  jid: string,
+  content: any,
+  options?: any,
+) {
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      return await socket.sendMessage(jid, content, options);
+    } catch (error) {
+      if (attempt === 3 || !isRateLimitError(error)) throw error;
+
+      const retryAfter = Number(
+        error?.response?.headers?.["retry-after"] ||
+          error?.headers?.["retry-after"] ||
+          0,
+      );
+      await sleep(Math.max(retryAfter * 1000, 2000 * 2 ** (attempt - 1)));
+    }
+  }
 }
 
 async function relayWithRateLimit(

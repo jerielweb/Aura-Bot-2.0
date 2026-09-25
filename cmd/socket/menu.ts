@@ -147,19 +147,22 @@ export default {
       runtimeDb?.getBot?.(sock.user?.id)?.data?.customAudio ??
       runtimeDb?.customAudio ??
       null;
-    if (customBanner?.path && existsSync(customBanner.path)) {
-      bannerPath = customBanner.path;
+    const customBannerBuffer = customBanner?.base64
+      ? Buffer.from(customBanner.base64, "base64")
+      : null;
+    if ((customBanner?.path && existsSync(customBanner.path)) || customBannerBuffer?.length) {
+      bannerPath = customBanner.path || `database-banner-${customBanner.base64.slice(0, 32)}`;
       isGif = Boolean(
         customBanner.mimetype?.includes("gif") || bannerPath.endsWith(".gif"),
       );
     }
 
     let imgBanner: any = mediaCacheMap.get(bannerPath);
-    if (!imgBanner && existsSync(bannerPath)) {
+    if (!imgBanner && (customBannerBuffer?.length || existsSync(bannerPath))) {
       try {
         const mediaType = isGif
-          ? { video: readFileSync(bannerPath) }
-          : { image: readFileSync(bannerPath) };
+          ? { video: customBannerBuffer || readFileSync(bannerPath) }
+          : { image: customBannerBuffer || readFileSync(bannerPath) };
 
         const prepared = await prepareWAMessageMedia(mediaType, {
           upload: sock.waUploadToServer,
@@ -222,6 +225,16 @@ export default {
           audio: readFileSync(customAudio.path),
           mimetype: "audio/ogg; codecs=opus",
           ptt: true,
+        },
+        { quoted: msg },
+      );
+    } else if (customAudio?.base64) {
+      await sock.sendMessage(
+        remoteJid,
+        {
+          audio: Buffer.from(customAudio.base64, "base64"),
+          mimetype: customAudio.mimetype || "audio/ogg; codecs=opus",
+          ptt: customAudio.ptt ?? true,
         },
         { quoted: msg },
       );

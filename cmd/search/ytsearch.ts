@@ -1,12 +1,17 @@
 import yts from "yt-search";
+import {
+  generateWAMessageFromContent,
+  prepareWAMessageMedia,
+} from "@whiskeysockets/baileys";
 import { fytBold } from "../../core/socketText.ts";
-import { formatCount } from "../../core/downloadUtils.ts";
+import { downloadBuffer, formatCount } from "../../core/downloadUtils.ts";
+import { createLinkPreviewWithoutChannel } from "../../core/LinkPreview.ts";
 
 export default {
   name: ["ytsearch", "yts", "plays"],
   category: "search",
   description: "Busca videos en YouTube.",
-  async run({ args, reply, react }: any) {
+  async run({ args, reply, react, sock, from, msg, sender }: any) {
     const query = args.join(" ").trim();
     if (!query) return reply("⚠️ Debes especificar qué buscar.");
     await react("🔍");
@@ -20,7 +25,31 @@ export default {
         text += `┃ ${index + 1}. ${fytBold(video.title)}\n┃ ├ 👤 ${video.author.name}\n┃ ├ ⏱️ ${video.timestamp}\n┃ ├ 👁️ ${formatCount(video.views)}\n┃ └ 🔗 ${video.url}\n\n`;
       }
       text += `╰〔 ⚡ ${fytBold("AURA REED")} 〕⬣`;
-      await reply({ image: { url: videos[0].thumbnail }, caption: text });
+      const thumbnailBuffer = await downloadBuffer(videos[0].thumbnail, 30000);
+      const prepared = await prepareWAMessageMedia(
+        { image: thumbnailBuffer },
+        {
+          upload: sock.waUploadToServer,
+          mediaTypeOverride: "thumbnail-link",
+        },
+      );
+      const preview = createLinkPreviewWithoutChannel({
+        textOriginal: text,
+        link: videos[0].url,
+        author: videos[0].author?.name || "YouTube",
+        title: videos[0].title,
+        banner: prepared.imageMessage,
+        mentionedJid: sender ? [sender] : [],
+        isForwarded: false,
+        forwardingScore: 0,
+      });
+      const previewMessage = generateWAMessageFromContent(from, preview, {
+        quoted: msg,
+        userJid: sock.user?.id,
+      });
+      await sock.relayMessage(from, previewMessage.message, {
+        messageId: previewMessage.key.id,
+      });
       await react("✅");
     } catch (error: any) {
       await react("❌");

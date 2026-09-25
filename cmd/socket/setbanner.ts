@@ -12,19 +12,6 @@ function unwrapMedia(message: any): any {
   return null;
 }
 
-function extensionFor(target: any): string {
-  const mime = String(
-    target?.imageMessage?.mimetype ||
-      target?.videoMessage?.mimetype ||
-      target?.documentMessage?.mimetype ||
-      "image/jpeg",
-  ).toLowerCase();
-  if (mime.includes("gif")) return "gif";
-  if (mime.includes("video")) return "mp4";
-  if (mime.includes("png")) return "png";
-  return "jpg";
-}
-
 export default {
   name: ["setbanner", "setmenuimage", "setmenubanner"],
   category: "socket",
@@ -47,19 +34,30 @@ export default {
       );
       if (!buffer?.length) throw new Error("No se pudo descargar el banner.");
 
-      const dir = path.resolve("./cache/bot-media");
-      await mkdir(dir, { recursive: true });
-      const filePath = path.join(dir, `banner-${randomUUID()}.${extensionFor(target)}`);
+      const mimetype =
+        target.imageMessage?.mimetype ||
+        target.videoMessage?.mimetype ||
+        target.documentMessage?.mimetype ||
+        "image/jpeg";
+      const databaseDir = path.resolve("./database");
+      await mkdir(databaseDir, { recursive: true });
+      const extension = mimetype.includes("gif")
+        ? "gif"
+        : mimetype.includes("video")
+          ? "mp4"
+          : mimetype.includes("png")
+            ? "png"
+            : "jpg";
+      const filePath = path.join(databaseDir, `banner-${randomUUID()}.${extension}`);
       await writeFile(filePath, buffer);
 
       const bot = ctx.db.getBot(ctx.botJid);
       const previousPath = bot?.data?.customBanner?.path;
-      if (previousPath && previousPath !== filePath) await unlink(previousPath).catch(() => undefined);
+      if (previousPath && previousPath !== filePath) {
+        await unlink(previousPath).catch(() => undefined);
+      }
       ctx.db.setBot(ctx.botJid, {
-        data: {
-          ...(bot?.data || {}),
-          customBanner: { path: filePath, mimetype: target.imageMessage?.mimetype || target.videoMessage?.mimetype || "image/jpeg" },
-        },
+        data: { customBanner: { path: filePath, mimetype } },
       });
       return ctx.reply("✅ Banner del menú actualizado.");
     } catch (error: any) {

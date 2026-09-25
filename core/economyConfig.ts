@@ -90,6 +90,14 @@ export function addBolsillo(groupJid: string, userJid: string, amount: number) {
   setEconomyUser(groupJid, userJid, { bolsillo: current + amount });
 }
 
+export function getAuraLevel(points: number): number {
+  const aura = Math.max(0, Number(points) || 0);
+  if (aura < 100) return 1;
+  if (aura < 200) return 2;
+  if (aura < 400) return 3;
+  return 4;
+}
+
 export function getBolsillo(groupJid: string, userJid: string): number {
   const user = getEconomyUser(groupJid, userJid);
   return Number(user.bolsillo ?? 0);
@@ -98,7 +106,7 @@ export function getBolsillo(groupJid: string, userJid: string): number {
 export function addAura(jid: string, amount: number) {
   const user: Record<string, any> = db.getUser(jid) ?? {};
   const aura = Math.max(0, Number(user.aura ?? 0) + amount);
-  db.setUser(jid, { aura, auraXp: aura });
+  db.setUser(jid, { aura, auraXp: aura, level: getAuraLevel(aura) });
   return aura;
 }
 

@@ -21,7 +21,7 @@ export default {
   name: ["setaudio", "setmenuaudio", "menuaudio"],
   category: "socket",
   description: "Cambia el audio que se envía al abrir el menú.",
-  ownerOnly: true,
+  botUserOnly: true,
   async run(ctx: any) {
     if (!ffmpegPath) return ctx.reply("❌ FFmpeg no está disponible.");
 
@@ -29,7 +29,6 @@ export default {
     const quotedMessage = context?.quotedMessage;
     const target = unwrapAudio(quotedMessage) || unwrapAudio(ctx.msg?.message);
     if (!target) return ctx.reply("⚠️ Responde a un audio para establecerlo en el menú.");
-
     try {
       const buffer = await downloadMediaMessage(
         { key: ctx.msg.key, message: target },
@@ -39,7 +38,8 @@ export default {
       );
       if (!buffer?.length) throw new Error("No se pudo descargar el audio.");
 
-      const dir = path.resolve("./cache/bot-media");
+      await ctx.react("⏳");
+      const dir = path.resolve("./database");
       await mkdir(dir, { recursive: true });
       const id = randomUUID();
       const input = path.join(dir, `audio-${id}.input`);
@@ -58,9 +58,10 @@ export default {
       ctx.db.setBot(ctx.botJid, {
         data: {
           ...(bot?.data || {}),
-          customAudio: { path: output, mimetype: "audio/ogg; codecs=opus", ptt: true },
+          customAudio: { path: output, mimetype: "audio/ogg; codecs=opus", ptt: true, seconds: 99999, },
         },
       });
+      await ctx.react("✅");
       return ctx.reply("✅ Audio del menú actualizado como nota de voz OGG/Opus.");
     } catch (error: any) {
       return ctx.reply({ text: `❌ No se pudo guardar el audio: ${error?.message || "error desconocido"}` });

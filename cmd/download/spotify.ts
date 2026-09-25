@@ -1,6 +1,7 @@
 import { fytBold } from "../../core/socketText.ts";
 import { requestJson, safeFileName } from "../../core/downloadUtils.ts";
 import { DL_CONFIG } from "../../config.ts";
+import { sendDownloadPreview } from "../../core/downloadPreview.ts";
 
 const API = DL_CONFIG.alya.BASE_URL.replace(/\/+$/, "");
 const KEY = DL_CONFIG.alya.API_KEY;
@@ -9,7 +10,7 @@ export default {
   name: ["spotify", "splay", "sp", "spdl"],
   category: "download",
   description: "Descarga canciones de Spotify por enlace o búsqueda.",
-  async run({ args, reply, react }: any) {
+  async run({ args, reply, react, sock, from, msg, sender }: any) {
     const query = args.join(" ").trim();
     if (!query)
       return reply(
@@ -32,9 +33,21 @@ export default {
         throw new Error("No se pudo obtener el audio.");
       const title = song.title || "Canción de Spotify";
       let caption = `╭〔 🎵 ${fytBold("SPOTIFY PLAY")} 〕━⬣\n\n┃ ➥ ${fytBold(title)}\n\n┣━━━━━━━━━━━━⬣\n┃ > ${fytBold("Artista")} › ${song.artist || "Desconocido"}\n┃ > ${fytBold("Álbum")} › ${song.album || "Desconocido"}\n┃ > ${fytBold("Duración")} › ${song.duration || "N/A"}\n┃ > ${fytBold("Tipo")} › Audio (MP3)\n┣━━━━━━━━━━━━⬣\n┃ ⏳ Descargando audio...\n╰━━〔 ⚡ ${fytBold("SYSTEM ACTIVE")} 〕━━⬣`;
-      if (song.coverHd || song.cover)
-        await reply({ image: { url: song.coverHd || song.cover }, caption });
-      else await reply({ text: caption });
+      const cover = song.coverHd || song.cover;
+      const hasPreview = cover
+        ? await sendDownloadPreview({
+            sock,
+            from,
+            msg,
+            thumbnail: cover,
+            caption,
+            link: isUrl ? query.split("?")[0] : `https://open.spotify.com/search/${encodeURIComponent(title)}`,
+            title,
+            author: song.artist || "Spotify",
+            sender,
+          })
+        : false;
+      if (!hasPreview) await reply({ text: caption });
       await reply({
         audio: { url: downloadUrl },
         mimetype: "audio/mpeg",

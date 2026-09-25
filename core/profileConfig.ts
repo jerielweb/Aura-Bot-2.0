@@ -1,7 +1,11 @@
 import { db } from "../dbController/db.ts";
 import { fytBold } from "./socketText.ts";
+import { getAuraLevel } from "./economyConfig.ts";
 import { economyUser } from "./economyRuntime.ts";
+import { sendDownloadPreview } from "./downloadPreview.ts";
 export type Profile = Record<string, any>;
+
+const PROFILE_REPOSITORY_URL = "https://github.com/jerielweb/Aura-Bot-2.0";
 
 type PendingProfileAction = {
   kind: "marry" | "divorce";
@@ -110,13 +114,14 @@ export function formatProfile(jid: string, profile = getProfile(jid)): string {
   const xp = Number(profile.auraXp ?? aura);
   const level = Math.max(
     1,
-    Number(profile.level ?? Math.floor(aura / 100) + 1),
+    Number(profile.level ?? getAuraLevel(aura)),
   );
   const wallet = Number(profile.bolsillo ?? 0);
   const bank = Number(profile.banco ?? profile.bank ?? 0);
   const userId = `WB${jid.split("@")[0]}`;
 
   return [
+    `${PROFILE_REPOSITORY_URL}`,
     `╭〔 👤 ${fytBold("PERFIL")} 〕⬣`,
     `┃ 📋 ${fytBold("SOBRE")} @${about}`,
     "╰━━━━━━━━━━━━⬣",
@@ -155,6 +160,19 @@ export async function sendProfilePreview(ctx: any, target: string) {
 
   try {
     const profileUrl = await getProfilePictureUrl(ctx.sock, target);
+    const hasPreview = await sendDownloadPreview({
+      sock: ctx.sock,
+      from: ctx.from,
+      msg: ctx.msg,
+      thumbnail: profileUrl,
+      caption: text,
+      link: PROFILE_REPOSITORY_URL,
+      title: "Aura Bot 2.0",
+      author: "Jeriel Web",
+      sender: target,
+    });
+    if (hasPreview) return;
+
     return ctx.sock.sendMessage(
       ctx.from,
       { image: { url: profileUrl }, caption: text, mentions: [target] },

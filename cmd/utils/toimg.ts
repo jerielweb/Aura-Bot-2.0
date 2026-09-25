@@ -1,4 +1,5 @@
 import { downloadMediaMessage } from "@whiskeysockets/baileys";
+import { sendMessageWithRateLimit } from "../../core/mediaSendUtils.ts";
 import sharp from "sharp";
 import ffmpegPath from "ffmpeg-static";
 import { execFile } from "node:child_process";
@@ -63,11 +64,11 @@ export default {
       if (target.stickerMessage || target.documentMessage?.mimetype === "image/webp") {
         const animated = Boolean(target.stickerMessage?.isAnimated) || target.documentMessage?.url?.includes("animated");
         const image = animated ? await convertWebpToGif(buffer) : await sharp(buffer).png().toBuffer();
-        await sock.sendMessage(from, { image, mimetype: animated ? "image/gif" : "image/png", caption }, { quoted });
+        await sendMessageWithRateLimit(sock, from, { image, mimetype: animated ? "image/gif" : "image/png", caption }, { quoted });
       } else if (target.imageMessage) {
-        await sock.sendMessage(from, { image: buffer, caption }, { quoted });
+        await sendMessageWithRateLimit(sock, from, { image: buffer, caption }, { quoted });
       } else if (target.documentMessage?.mimetype === "image/gif") {
-        await sock.sendMessage(from, { image: buffer, mimetype: "image/gif", caption }, { quoted });
+        await sendMessageWithRateLimit(sock, from, { image: buffer, mimetype: "image/gif", caption }, { quoted });
       } else {
         throw new Error("Tipo de medio no soportado.");
       }

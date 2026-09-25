@@ -1,6 +1,7 @@
 import { fytBold } from "../../core/socketText.ts";
 import { safeFileName } from "../../core/downloadUtils.ts";
 import { request } from "undici";
+import { sendDownloadPreview } from "../../core/downloadPreview.ts";
 
 let cachedClientId = "";
 let cachedAt = 0;
@@ -49,7 +50,7 @@ export default {
   name: ["dscplay", "dscdl", "dsc", "docsoundcloud"],
   category: "download",
   description: "Descarga SoundCloud como documento MP3.",
-  async run({ args, reply, react }: any) {
+  async run({ args, reply, react, sock, from, msg, sender }: any) {
     const query = args.join(" ").trim();
     if (!query)
       return reply("⚠️ Proporciona una búsqueda o enlace de SoundCloud.");
@@ -78,7 +79,21 @@ export default {
       if (!stream?.url) throw new Error("SoundCloud no devolvió el audio.");
       const title = track.title || "SoundCloud";
       const caption = `╭〔 🎵 ${fytBold("SOUNDCLOUD DOCUMENT")} 〕━⬣\n\n┃ ➥ ${fytBold(title)}\n\n┣━━━━━━━━━━━━⬣\n┃ > ${fytBold("Artista")} › ${track.user?.username || "N/A"}\n┃ > ${fytBold("Tipo")} › Documento MP3\n┣━━━━━━━━━━━━⬣\n┃ ⏳ Descargando documento...\n╰━━〔 ⚡ ${fytBold("SYSTEM ACTIVE")} 〕━━⬣`;
-      await reply({ text: caption });
+      const thumbnail = track.artwork_url?.replace("large", "t500x500");
+      const hasPreview = thumbnail
+        ? await sendDownloadPreview({
+            sock,
+            from,
+            msg,
+            thumbnail,
+            caption,
+            link: url,
+            title,
+            author: track.user?.username || "SoundCloud",
+            sender,
+          })
+        : false;
+      if (!hasPreview) await reply({ text: caption });
       await reply({
         document: { url: stream.url },
         mimetype: "audio/mpeg",

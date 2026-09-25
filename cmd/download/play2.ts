@@ -5,6 +5,7 @@ import {
   safeFileName,
 } from "../../core/downloadUtils.ts";
 import { DL_CONFIG } from "../../config.ts";
+import { sendDownloadPreview } from "../../core/downloadPreview.ts";
 
 const API = "https://api.lempi.lat";
 const KEY = "OBOE-AERETHIX";
@@ -28,7 +29,7 @@ export default {
   name: ["ytmp4", "video", "playvideo", "mp4", "ytv", "play2"],
   category: "download",
   description: "Busca y descarga video de YouTube.",
-  async run({ args, reply, react }: any) {
+  async run({ args, reply, react, sock, from, msg, sender }: any) {
     const query = args.join(" ").trim();
     if (!query) return reply("⚠️ Proporciona el nombre o enlace de un video.");
     await react("⏳");
@@ -43,8 +44,20 @@ export default {
         throw new Error("La API no pudo procesar el video.");
       const title = data.titulo || "Video de YouTube";
       const caption = `╭〔 🎬 ${fytBold("YOUTUBE VIDEO")} 〕━⬣\n\n┃ ➥ ${fytBold(title)}\n\n┣━━━━━━━━━━━━⬣\n┃ > ${fytBold("Canal")} › ${data.canal || "Desconocido"}\n┃ > ${fytBold("Duración")} › ${data.duracion || "??"}\n┃ > ${fytBold("Tamaño")} › ${data.datos.tamaño || "??"}\n┃ > ${fytBold("Tipo")} › Video MP4\n┃ > ${fytBold("Url")} › ${url}\n┣━━━━━━━━━━━━⬣\n┃ ⏳ Enviando video...\n╰━━〔 ⚡ ${fytBold("SYSTEM ACTIVE")} 〕━━⬣`;
-      if (data.miniatura)
-        await reply({ image: { url: data.miniatura }, caption });
+      const hasPreview = data.miniatura
+        ? await sendDownloadPreview({
+            sock,
+            from,
+            msg,
+            thumbnail: data.miniatura,
+            caption,
+            link: url,
+            title,
+            author: data.canal || "YouTube",
+            sender,
+          })
+        : false;
+      if (!hasPreview) await reply({ text: caption });
       const file = await downloadBuffer(data.datos.url);
       await reply({
         video: file,

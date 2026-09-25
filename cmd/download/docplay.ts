@@ -1,6 +1,7 @@
 import { fytBold } from "../../core/socketText.ts";
 import { requestJson, safeFileName } from "../../core/downloadUtils.ts";
 import { DL_CONFIG } from "../../config.ts";
+import { sendDownloadPreview } from "../../core/downloadPreview.ts";
 
 const API = DL_CONFIG.alya.BASE_URL.replace(/\/+$/, "");
 const YT_ID =
@@ -18,7 +19,7 @@ export default {
   ],
   category: "download",
   description: "Descarga audio de YouTube como documento.",
-  async run({ args, reply, react }: any) {
+  async run({ args, reply, react, sock, from, msg, sender }: any) {
     const query = args.join(" ").trim();
     if (!query)
       return reply("⚠️ Proporciona una búsqueda o enlace de YouTube.");
@@ -40,7 +41,24 @@ export default {
       const info = data.data;
       const title = info.title || "Audio de YouTube";
       const caption = `╭〔 🎵 ${fytBold("YOUTUBE DOCUMENT")} 〕━⬣\n\n┃ ➥ ${fytBold(title)}\n\n┣━━━━━━━━━━━━⬣\n┃ > ${fytBold("Canal")} › ${info.author || "Desconocido"}\n┃ > ${fytBold("Duración")} › ${info.duration || "??"}\n┃ > ${fytBold("Calidad")} › ${info.quality || "128k"}\n┃ > ${fytBold("Tipo")} › Documento MP3\n┣━━━━━━━━━━━━⬣\n┃ ⏳ Descargando documento...\n╰━━〔 ⚡ ${fytBold("SYSTEM ACTIVE")} 〕━━⬣`;
-      await reply({ text: caption });
+      const videoId = url.match(YT_ID)?.[1];
+      const thumbnail = videoId
+        ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
+        : "";
+      const hasPreview = thumbnail
+        ? await sendDownloadPreview({
+            sock,
+            from,
+            msg,
+            thumbnail,
+            caption,
+            link: url,
+            title,
+            author: info.author || "YouTube",
+            sender,
+          })
+        : false;
+      if (!hasPreview) await reply({ text: caption });
       await reply({
         document: { url: info.dl },
         mimetype: "audio/mpeg",

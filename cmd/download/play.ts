@@ -160,14 +160,15 @@ export default {
       const youtubeUrl = videoId
         ? `https://youtu.be/${videoId}`
         : result.url || finalUrl;
-
-      let caption = `┃ ➥ ${fytBold(title)}\n\n`;
+      let caption = `╭〔 🎵 ${fytBold("YOUTUBE PLAY")} 〕━⬣\n\n`;
+      caption += `┃ ➥ ${fytBold(title)}\n\n`;
       caption += `┣━━━━━━━━━━━━⬣\n`;
       caption += `┃ > ${fytBold("Canal")} › ${author}\n`;
       caption += `┃ > ${fytBold("Duración")} › ${duration}\n`;
       caption += `┃ > ${fytBold("Vistas")} › ${fomatViewers(views)}\n`;
       caption += `┃ > ${fytBold("Calidad")} › ${quality}\n`;
       caption += `┃ > ${fytBold("Url")} › ${youtubeUrl}\n`;
+      caption += `┣━━━━━━━━━━━━⬣\n┃ ⏳ Descargando audio...\n`;
       caption += `╰━━〔 ⚡ ${fytBold("SYSTEM ACTIVE")} 〕━━⬣`;
 
       const thumbnail = videoId

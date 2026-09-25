@@ -1,12 +1,13 @@
 import { fytBold } from "../../core/socketText.ts";
 import { requestJson } from "../../core/downloadUtils.ts";
 import { DL_CONFIG } from "../../config.ts";
+import { sendDownloadPreview } from "../../core/downloadPreview.ts";
 
 export default {
   name: ["spsearch", "spotifysearch", "sps"],
   category: "search",
   description: "Busca canciones en Spotify.",
-  async run({ args, reply, react }: any) {
+  async run({ args, reply, react, sock, from, msg, sender }: any) {
     const query = args.join(" ").trim();
     if (!query) return reply("⚠️ Proporciona el nombre de una canción o artista.");
     await react("🔍");
@@ -19,7 +20,23 @@ export default {
       for (const [index, track] of tracks.entries()) text += `┃ ${index + 1}. ${fytBold(track.title || "Sin título")}\n┃ ├ 👤 Artista › ${track.artist || "Desconocido"}\n┃ ├ 💿 Álbum › ${track.album || "Desconocido"}\n┃ ├ ⏱️ Duración › ${track.duration || "N/A"}\n┃ └ 🔗 Enlace › ${track.url || "No disponible"}\n\n`;
       text += `╰〔 ⚡ ${fytBold("AURA REED")} 〕⬣`;
       const cover = tracks[0].image || tracks[0].cover || tracks[0].coverHd;
-      if (cover) await reply({ image: { url: cover }, caption: text }); else await reply({ text });
+      const firstTrack = tracks[0];
+      const title = firstTrack.title || "Resultado de Spotify";
+      const link = firstTrack.url || `https://open.spotify.com/search/${encodeURIComponent(title)}`;
+      const hasPreview = cover
+        ? await sendDownloadPreview({
+            sock,
+            from,
+            msg,
+            thumbnail: cover,
+            caption: text,
+            link,
+            title,
+            author: firstTrack.artist || "Spotify",
+            sender,
+          })
+        : false;
+      if (!hasPreview) await reply({ text });
       await react("✅");
     } catch (error: any) { await react("❌"); return reply({ text: `❌ Error: ${error?.message || "No se pudo buscar en Spotify."}` }); }
   },
