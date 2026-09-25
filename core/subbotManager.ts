@@ -52,6 +52,9 @@ export async function requestSubBotLink(request: LinkRequest) {
     pairingMethod: request.method,
     allowPairing: true,
     pairingPhone: storedPhone || manualPhone,
+    onSocketCreated: (socket) => {
+      activeSubBots.set(sessionName, socket);
+    },
     pairingTimeoutMs: 60_000,
     onQr: request.onQr,
     onPairingCode: request.onPairingCode,
@@ -82,11 +85,14 @@ export async function startSavedSubBots() {
     }
 
     const sessionName = bot.data?.sessionName;
-    if (bot.isMain || !sessionName || bot.status !== "active") continue;
+    if (bot.isMain || !sessionName) continue;
     if (activeSubBots.has(sessionName)) continue;
 
     const connection = await connectToWhatsApp(sessionName, true, {
       allowPairing: false,
+      onSocketCreated: (socket) => {
+        activeSubBots.set(sessionName, socket);
+      },
     });
     if (connection) activeSubBots.set(sessionName, connection);
   }

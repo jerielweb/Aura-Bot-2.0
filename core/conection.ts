@@ -29,6 +29,7 @@ export type ConnectionOptions = {
   pairingMethod?: "qr" | "code";
   allowPairing?: boolean;
   pairingPhone?: string;
+  onSocketCreated?: (socket: any) => Promise<void> | void;
   pairingTimeoutMs?: number;
   onQr?: (qr: string) => Promise<void> | void;
   onPairingCode?: (code: string) => Promise<void> | void;
@@ -228,6 +229,7 @@ export async function connectToWhatsApp(
   (sock as any).isSubBot = isSubBot;
   (sock as any).subBotId = sessionName;
   (sock as any).sessionName = sessionName;
+  await options.onSocketCreated?.(sock);
   sock.ev.on("creds.update", saveCreds);
 
   let connectionOpened = isRegistered;
