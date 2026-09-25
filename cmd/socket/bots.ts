@@ -135,10 +135,10 @@ export default {
         text += `┃ ${index + 1}. @${number}\n`;
         text += `┃ ✦ ${fytBold(name)}\n`;
         if (jid) {
-          text += `┗ ${getBotType(bot)}\n\n`;
+          text += `┗━${getBotType(bot)}\n\n`;
           mentions.push(jid);
         } else {
-          text += `┗ ${getBotType(bot)}\n\n`;
+          text += `┗━${getBotType(bot)}\n\n`;
         }
       }
     }
