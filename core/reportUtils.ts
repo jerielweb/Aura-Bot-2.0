@@ -8,8 +8,10 @@ const REPORT_MARKER = /\[AURA_REPORT:([A-Za-z0-9_-]+)\]/;
 export type ReportData = {
   id: string;
   originJid: string;
+  originName?: string;
   senderJid: string;
   botSession: string;
+  sourceMessage?: { key: any; message: any };
 };
 
 export function createReportId(): string {
@@ -49,7 +51,7 @@ export function reportCaption(data: ReportData, reportText: string): string {
 
 ┃ 🆔 ${fytBold("ID")} › ${data.id}
 ┃ 👤 ${fytBold("Usuario")} › @${data.senderJid.split("@")[0]}
-┃ 📍 ${fytBold("Chat")} › ${data.originJid}
+┃ 📍 ${fytBold("Chat")} › ${data.originName || data.originJid}
 ┃ 🤖 ${fytBold("Bot")} › ${data.botSession || "actual"}
 ┃ 🕒 ${fytBold("Fecha")} › ${new Date().toLocaleString("es-CR")}
 
@@ -63,7 +65,7 @@ export function reportCaption(data: ReportData, reportText: string): string {
 }
 
 export function replyCaption(text: string): string {
-  return `╭〔 💬 ${fytBold("RESPUESTA DE SOPORTE")} 〕━⬣\n\n┃ > ${text.replace(/\n/g, "\n┃ > ")}\n\n╰━━〔 ⚡ ${fytBold("SYSTEM ACTIVE")} 〕━━⬣`;
+  return `╭〔 💬 ${fytBold("RESPUESTA DE SOPORTE")} 〕⬣\n\n┃ > ${text.replace(/\n/g, "\n")}\n\n╰━━〔 ⚡ ${fytBold("SYSTEM ACTIVE")} 〕━━⬣`;
 }
 
 export function getSocketCandidates(current: any): any[] {

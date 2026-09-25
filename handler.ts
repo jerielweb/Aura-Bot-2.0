@@ -484,7 +484,7 @@ export async function handleMessage(
         const storedBot = runtimeDb.getBot?.(botJid);
         const botId = sock.subBotId || storedBot?.bot_id || null;
         const isPrimary = botIdentityMatches(primaryBot, botJid, botId);
-        if (!isPrimary) return;
+        if (!isPrimary && isCmd) return;
         if (storedBot?.status !== "active") return;
       }
     }

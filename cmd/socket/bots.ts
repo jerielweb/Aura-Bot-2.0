@@ -82,21 +82,21 @@ async function resolveBotJid(
   return "";
 }
 
-function getBotStatus(bot: any): string {
-  return String(bot.status || "offline").toLowerCase() === "active"
-    ? "🟢 ON"
-    : "🔴 OFF";
+function getBotType(bot: any): string {
+  return Number(bot.isMain) === 1 ? "Main" : "SuB-Bot";
 }
 
 export default {
   name: ["bots", "btos", "subbots", "lista-bots"],
   category: "socket",
-  description: "Muestra los bots registrados y su estado de conexión.",
+  description: "Muestra los bots activos y su tipo.",
   ownerOnly: false,
 
   async run({ from, db, groupMeta, resolveLid, usedPrefix, reply }: any) {
     const bots = (db.getAllBots?.() || []).filter(
-      (bot: any) => getBotNumber(bot) || bot.bot_id || bot.lid,
+      (bot: any) =>
+        String(bot.status || "offline").toLowerCase() === "active" &&
+        (getBotNumber(bot) || bot.bot_id || bot.lid),
     );
     const isGroup = String(from || "").endsWith("@g.us");
     const currentGroup = normalizeGroup(from);
@@ -113,9 +113,9 @@ export default {
     }
 
     let text = `╭〔 🔌 ${fytBold("AURA REED")} 〕⬣\n`;
-    text += `┃ 🤖 ${fytBold(isGroup ? "BOTS EN EL GRUPO" : "SUB-BOTS REGISTRADOS")}\n`;
+    text += `┃ 🤖 ${fytBold(isGroup ? "BOTS ACTIVOS EN EL GRUPO" : "BOTS ACTIVOS")}\n`;
     text += `┣━━━━━━━━━━━━⬣\n`;
-    text += `┃ 📊 ${fytBold("Registrados")}: *${bots.length}*\n`;
+    text += `┃ 📊 ${fytBold("Activos")}: *${bots.length}*\n`;
     if (isGroup) {
       text += `┃ ⚡ ${fytBold("En este grupo")}: *${visibleBots.length}*\n`;
     }
@@ -130,12 +130,14 @@ export default {
         const jid = await resolveBotJid(bot, participants, resolveLid);
         const number = getBotNumber(bot, jid);
         const name = String(bot.bot_name || "Sub-Bot").trim();
-        text += `┃ ${index + 1}. ${fytBold(name)}\n`;
+
+        text += `┃ > ${index + 1}. @${number}\n`;
+        text += `┃ > ${fytBold(name)}\n`;
         if (jid) {
-          text += `┃ > @${number} ${getBotStatus(bot)}\n\n`;
+          text += `┗ ${getBotType(bot)}\n\n`;
           mentions.push(jid);
         } else {
-          text += `┃    ${getBotStatus(bot)}\n`;
+          text += `┗ ${getBotType(bot)}\n\n`;
         }
       }
     }

@@ -22,8 +22,13 @@ export default {
     const data = {
       id: createReportId(),
       originJid: ctx.from,
+      originName: ctx.groupName || undefined,
       senderJid: ctx.sender,
       botSession: String(ctx.sock?.sessionName || ctx.sock?.subBotId || "main"),
+      sourceMessage:
+        ctx.msg?.key && ctx.msg?.message
+          ? { key: ctx.msg.key, message: ctx.msg.message }
+          : undefined,
     };
 
     await ctx.react("📨");

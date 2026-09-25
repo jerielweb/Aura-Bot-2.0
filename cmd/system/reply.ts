@@ -30,6 +30,7 @@ export default {
         getSocketCandidates(ctx.sock),
         report.originJid,
         { text: replyCaption(response), mentions: [report.senderJid] },
+        report.sourceMessage ? { quoted: report.sourceMessage } : undefined,
       );
       return ctx.reply(`✅ ${fytBold("RESPUESTA ENVIADA")} › ${report.id}`);
     } catch (error) {

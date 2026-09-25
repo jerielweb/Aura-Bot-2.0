@@ -69,7 +69,7 @@ export function formatPlainText(text: unknown, footer = "SYSTEM"): string {
     .map((line) => `┃ ${line}`)
     .join("\n");
 
-  return `╭〔 ⚡ ${fytBold("AURA REED")} 〕⬣\n┃ ${fytBold("INFORMACIÓN")}\n╰━━━━━━━━━━━━⬣\n\n${body}\n\n╰〔 ⚡ ${fytBold(footer)} 〕⬣`;
+  return `╭〔 ⚡ ${fytBold("AURA REED")} 〕⬣\n┃ ${fytBold("ℹ️ INFORMACIÓN")}\n╰━━━━━━━━━━━━⬣\n\n${body}\n\n╰〔 ⚡ ${fytBold(footer)} 〕⬣`;
 }
 
 export const NOT_CMD_FOUND = ({

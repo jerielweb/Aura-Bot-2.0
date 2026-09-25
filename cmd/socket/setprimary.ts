@@ -6,6 +6,42 @@ function normalize(value: unknown): string {
     .replace(/:.*(?=@)/, "");
 }
 
+function isPhoneJid(value: unknown): boolean {
+  return /^\d+@s\.whatsapp\.net$/.test(normalize(value));
+}
+
+async function getBotMention(
+  bot: any,
+  participants: any[],
+  resolveLid?: (jid: string) => Promise<string>,
+): Promise<string> {
+  const directJid = [bot.jid, bot.data?.jid, bot.phone_number].find(isPhoneJid);
+  if (directJid) return normalize(directJid);
+
+  const identities = [bot.bot_id, bot.lid, bot.jid].map(normalize);
+  const participant = participants.find((entry: any) =>
+    [entry?.id, entry?.lid, entry?.jid, entry?.phoneNumber]
+      .map(normalize)
+      .some((jid: string) => jid && identities.includes(jid)),
+  );
+  const participantJid = [
+    participant?.phoneNumber,
+    participant?.jid,
+    participant?.id,
+  ].find(isPhoneJid);
+  if (participantJid) return normalize(participantJid);
+
+  const lid = [bot.lid, bot.bot_id].find((jid) =>
+    String(jid || "").endsWith("@lid"),
+  );
+  if (lid && resolveLid) {
+    const resolved = await resolveLid(normalize(lid));
+    if (isPhoneJid(resolved)) return normalize(resolved);
+  }
+
+  return "";
+}
+
 function getTargetFromMessage(message: any): string | null {
   const contextInfos = Object.values(message?.message ?? {})
     .map((value: any) => value?.contextInfo)
@@ -27,7 +63,18 @@ export default {
   groupOnly: true,
   adminOnly: true,
 
-  async run({ args, cmdName, db, from, msg, reply, sock, botJid }: any) {
+  async run({
+    args,
+    cmdName,
+    db,
+    from,
+    msg,
+    reply,
+    sock,
+    botJid,
+    groupMeta,
+    resolveLid,
+  }: any) {
     const requestedBot = normalize(getTargetFromMessage(msg) || args[0] || "");
 
     if (cmdName === "delprimary") {
@@ -75,8 +122,17 @@ export default {
     }
 
     db.setPrimary(from, targetBot);
+    const mentionJid = await getBotMention(
+      selectedBot || db.getBotById?.(targetBot),
+      groupMeta?.participants || [],
+      resolveLid,
+    );
+    const targetName = String(selectedBot?.bot_name || "Bot seleccionado").trim();
     return reply({
-      text: `✅ ${fytBold("Bot primario configurado")}: ${targetBot}`,
+      text: mentionJid
+        ? `✅ ${fytBold("Bot primario configurado")}: @${mentionJid.split("@")[0]}`
+        : `✅ ${fytBold("Bot primario configurado")}: ${targetName}`,
+      mentions: mentionJid ? [mentionJid] : [],
     });
   }
 };
