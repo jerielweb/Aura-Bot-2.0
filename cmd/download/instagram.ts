@@ -1,5 +1,5 @@
 import { fytBold } from "../../core/socketText.ts";
-import { downloadBuffer, requestJson } from "../../core/downloadUtils.ts";
+import { downloadToCache, requestJson } from "../../core/downloadUtils.ts";
 
 const INSTAGRAM_URL =
   /(?:instagram\.com|instagr\.am)\/(?:reels?|p|tv|stories)\//i;
@@ -28,18 +28,18 @@ export default {
       );
       const caption = `╭〔 📸 ${fytBold(video ? "INSTAGRAM VIDEO" : "INSTAGRAM POST")} 〕━⬣\n\n┃ ➥ ${fytBold(data?.caption || "Sin título")}\n\n┣━━━━━━━━━━━━⬣\n┃ > ${fytBold("Total")} › ${video ? "1 video" : `${images.length} imágenes`}\n┃ > ${fytBold("Url")} › ${url}\n╰━━〔 ⚡ ${fytBold("SYSTEM ACTIVE")} 〕━━⬣`;
       if (video) {
-        const file = await downloadBuffer(video.url, 120000);
+        const file = await downloadToCache(video.url, 180000);
         await reply({
-          video: file,
+          video: { url: file },
           mimetype: "video/mp4",
           fileName: "instagram.mp4",
           caption,
         });
       } else if (images.length) {
         for (const [index, item] of images.entries()) {
-          const file = await downloadBuffer(item.url, 120000);
+          const file = await downloadToCache(item.url, 180000);
           await reply({
-            image: file,
+            image: { url: file },
             caption: index === 0 ? caption : undefined,
           });
         }

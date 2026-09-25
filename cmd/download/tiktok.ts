@@ -1,6 +1,6 @@
 import { fytBold } from "../../core/socketText.ts";
 import {
-  downloadBuffer,
+  downloadToCache,
   requestJson,
   safeFileName,
   formatCount,
@@ -43,9 +43,9 @@ export default {
         data.author?.nickname || data.author?.fullname || "Desconocido";
       const title = data.title || "Video de TikTok";
       const caption = `╭〔 🎥 ${fytBold("TIKTOK VIDEO")} 〕━⬣\n\n┃ ➥ ${fytBold(title)}\n\n┣━━━━━━━━━━━━⬣\n┃ > ${fytBold("Autor")} › ${author}\n┃ > ${fytBold("Vistas")} › ${formatCount(data.stats?.views || data.play_count)}\n┃ > ${fytBold("Likes")} › ${formatCount(data.stats?.likes || data.digg_count)}\n┃ > ${fytBold("Comentarios")} › ${formatCount(data.stats?.comment || data.comment_count)}\n┃ > ${fytBold("Compartidos")} › ${formatCount(data.stats?.share || data.share_count)}\n┃ > ${fytBold("Url")} › ${url}\n┣━━━━━━━━━━━━⬣\n┃ ⏳ Descargando video...\n╰━━〔 ⚡ ${fytBold("SYSTEM ACTIVE")} 〕━━⬣`;
-      const file = await downloadBuffer(videoUrl, 120000);
+      const file = await downloadToCache(videoUrl, 180000);
       await reply({
-        video: file,
+        video: { url: file },
         mimetype: "video/mp4",
         fileName: `${safeFileName(title, "tiktok")}.mp4`,
         caption,

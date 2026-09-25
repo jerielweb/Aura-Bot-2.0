@@ -78,5 +78,5 @@ export default {
     return reply({
       text: `✅ ${fytBold("Bot primario configurado")}: ${targetBot}`,
     });
-  },
+  }
 };

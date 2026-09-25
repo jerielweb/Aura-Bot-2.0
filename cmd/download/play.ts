@@ -1,4 +1,5 @@
 import { request } from "undici";
+import { readFile } from "node:fs/promises";
 import {
   generateWAMessageFromContent,
   prepareWAMessageMedia,
@@ -6,7 +7,7 @@ import {
 import { fytBold } from "../../core/socketText.ts";
 import { DL_CONFIG } from "../../config.ts";
 import { createLinkPreviewWithoutChannel } from "../../core/LinkPreview.ts";
-import { downloadBuffer } from "../../core/downloadUtils.ts";
+import { downloadToCache } from "../../core/downloadUtils.ts";
 
 const API_KEY = DL_CONFIG.alya.API_KEY;
 const BASE_URL = DL_CONFIG.alya.BASE_URL.replace(/\/+$/, "");
@@ -175,7 +176,9 @@ export default {
         ? audio.thumbnail || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
         : audio.thumbnail || result.banner;
       if (thumbnail) {
-        const thumbnailBuffer = await downloadBuffer(thumbnail, 30000);
+        const thumbnailBuffer = await readFile(
+          await downloadToCache(thumbnail, 30000),
+        );
         const prepared = await prepareWAMessageMedia(
           { image: thumbnailBuffer },
           {

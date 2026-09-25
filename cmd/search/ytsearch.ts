@@ -1,10 +1,11 @@
 import yts from "yt-search";
+import { readFile } from "node:fs/promises";
 import {
   generateWAMessageFromContent,
   prepareWAMessageMedia,
 } from "@whiskeysockets/baileys";
 import { fytBold } from "../../core/socketText.ts";
-import { downloadBuffer, formatCount } from "../../core/downloadUtils.ts";
+import { downloadToCache, formatCount } from "../../core/downloadUtils.ts";
 import { createLinkPreviewWithoutChannel } from "../../core/LinkPreview.ts";
 
 export default {
@@ -25,7 +26,9 @@ export default {
         text += `┃ ${index + 1}. ${fytBold(video.title)}\n┃ ├ 👤 ${video.author.name}\n┃ ├ ⏱️ ${video.timestamp}\n┃ ├ 👁️ ${formatCount(video.views)}\n┃ └ 🔗 ${video.url}\n\n`;
       }
       text += `╰〔 ⚡ ${fytBold("AURA REED")} 〕⬣`;
-      const thumbnailBuffer = await downloadBuffer(videos[0].thumbnail, 30000);
+      const thumbnailBuffer = await readFile(
+        await downloadToCache(videos[0].thumbnail, 30000),
+      );
       const prepared = await prepareWAMessageMedia(
         { image: thumbnailBuffer },
         {

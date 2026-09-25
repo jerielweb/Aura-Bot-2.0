@@ -1,5 +1,5 @@
 import { fytBold } from "../../core/socketText.ts";
-import { downloadBuffer, requestJson } from "../../core/downloadUtils.ts";
+import { downloadToCache, requestJson } from "../../core/downloadUtils.ts";
 import { DL_CONFIG } from "../../config.ts";
 
 const API = DL_CONFIG.alya.BASE_URL.replace(/\/+$/, "");
@@ -18,16 +18,29 @@ export default {
         `${API}/dl/facebook?url=${encodeURIComponent(url)}&key=${DL_CONFIG.alya.API_KEY}`,
         60000,
       );
-      const item = data?.data?.[0] || data?.result?.[0] || data?.data;
+      const items = Array.isArray(data?.resultados)
+        ? data.resultados
+        : Array.isArray(data?.data)
+          ? data.data
+          : Array.isArray(data?.result)
+            ? data.result
+            : [data?.data || data?.result];
+      const item = items
+        .filter((entry: any) => entry)
+        .sort((left: any, right: any) => {
+          const leftQuality = parseInt(String(left?.quality || ""), 10) || 0;
+          const rightQuality = parseInt(String(right?.quality || ""), 10) || 0;
+          return rightQuality - leftQuality;
+        })[0];
       const videoUrl =
         typeof item === "string" ? item : item?.url || item?.hd || item?.sd;
       if (!data?.status || !videoUrl)
         throw new Error("La API no devolvió un video descargable.");
       const quality = item?.quality || "HD";
       const caption = `╭〔 🎥 ${fytBold("FACEBOOK VIDEO")} 〕━⬣\n\n┣━━━━━━━━━━━━⬣\n┃ > ${fytBold("Calidad")} › ${quality}\n┃ > ${fytBold("Tipo")} › Video MP4\n┃ > ${fytBold("Url")} › ${url}\n┣━━━━━━━━━━━━⬣\n┃ ⏳ Descargando video...\n╰━━〔 ⚡ ${fytBold("SYSTEM ACTIVE")} 〕━━⬣`;
-      const file = await downloadBuffer(videoUrl, 120000);
+      const file = await downloadToCache(videoUrl, 180000);
       await reply({
-        video: file,
+        video: { url: file },
         mimetype: "video/mp4",
         fileName: "facebook.mp4",
         caption,

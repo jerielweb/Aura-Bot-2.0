@@ -69,6 +69,9 @@ export async function requestSubBotLink(request: LinkRequest) {
       db.deleteBot(sessionName);
       return request.onPairingExpired?.();
     },
+    onDisconnected: () => {
+      activeSubBots.delete(sessionName);
+    },
   };
 
   const connection = await connectToWhatsApp(sessionName, true, options);
@@ -92,6 +95,9 @@ export async function startSavedSubBots() {
       allowPairing: false,
       onSocketCreated: (socket) => {
         activeSubBots.set(sessionName, socket);
+      },
+      onDisconnected: () => {
+        activeSubBots.delete(sessionName);
       },
     });
     if (connection) activeSubBots.set(sessionName, connection);

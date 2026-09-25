@@ -3,6 +3,7 @@ import { fytBold } from "./socketText.ts";
 import { getAuraLevel } from "./economyConfig.ts";
 import { economyUser } from "./economyRuntime.ts";
 import { sendDownloadPreview } from "./downloadPreview.ts";
+import { LRUCache } from "lru-cache";
 export type Profile = Record<string, any>;
 
 const PROFILE_REPOSITORY_URL = "https://github.com/jerielweb/Aura-Bot-2.0";
@@ -14,7 +15,10 @@ type PendingProfileAction = {
   expiresAt: number;
 };
 
-const pendingProfileActions = new Map<string, PendingProfileAction>();
+const pendingProfileActions = new LRUCache<string, PendingProfileAction>({
+  max: 1000,
+  ttl: 5 * 60 * 1000,
+});
 
 export const DEFAULT_PFP =
   "https://i.pinimg.com/736x/af/a3/24/afa324dff15091f93624bb470d60a592.jpg";
@@ -62,10 +66,7 @@ export function getPendingProfileAction(
   const key = `${kind}:${target}`;
   const action = pendingProfileActions.get(key);
   if (!action) return null;
-  if (action.expiresAt <= Date.now()) {
-    pendingProfileActions.delete(key);
-    return null;
-  }
+  if (action.expiresAt <= Date.now()) return null;
   return action;
 }
 

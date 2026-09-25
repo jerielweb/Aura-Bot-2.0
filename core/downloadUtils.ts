@@ -1,3 +1,9 @@
+import { createHash, randomBytes } from "node:crypto";
+import { createWriteStream } from "node:fs";
+import { mkdir, rename, rm, stat } from "node:fs/promises";
+import path from "node:path";
+import { pipeline } from "node:stream/promises";
+import { Readable } from "node:stream";
 import { fetch } from "undici";
 
 const HEADERS = {
@@ -6,30 +12,68 @@ const HEADERS = {
 };
 
 export async function requestJson(url: string, timeout = 30000): Promise<any> {
-  const response = await fetch(url, {
-    headers: HEADERS,
-    signal: AbortSignal.timeout(timeout),
-    redirect: "follow",
-  });
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const response = await fetch(url, {
+        headers: HEADERS,
+        signal: AbortSignal.timeout(timeout),
+        redirect: "follow",
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.json();
+    } catch (error) {
+      lastError = error;
+      if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** attempt));
+    }
   }
-  return response.json();
+  throw lastError instanceof Error ? lastError : new Error("Solicitud fallida.");
 }
 
-export async function downloadBuffer(
+const CACHE_DIR = path.resolve(process.env.GLOBAL_CUSTOM_TMP || "./cache");
+
+export async function downloadToCache(
   url: string,
-  timeout = 120000,
-): Promise<Buffer> {
-  const response = await fetch(url, {
-    headers: HEADERS,
-    signal: AbortSignal.timeout(timeout),
-    redirect: "follow",
-  });
-  if (!response.ok) {
-    throw new Error(`Descarga HTTP ${response.status}`);
+  timeout = 180000,
+): Promise<string> {
+  await mkdir(CACHE_DIR, { recursive: true });
+  const cacheKey = createHash("sha256").update(url).digest("hex").slice(0, 32);
+  const filePath = path.join(CACHE_DIR, `download-${cacheKey}.bin`);
+
+  try {
+    const cached = await stat(filePath);
+    if (cached.size > 0) return filePath;
+  } catch {
+    // El archivo aún no existe o quedó incompleto.
   }
-  return Buffer.from(await response.arrayBuffer());
+
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const partialPath = path.join(
+      CACHE_DIR,
+      `.download-${cacheKey}-${process.pid}-${randomBytes(4).toString("hex")}.part`,
+    );
+    try {
+      const response = await fetch(url, {
+        headers: HEADERS,
+        signal: AbortSignal.timeout(timeout),
+        redirect: "follow",
+      });
+      if (!response.ok) throw new Error(`Descarga HTTP ${response.status}`);
+      if (!response.body) throw new Error("La descarga no devolvió contenido.");
+      await pipeline(
+        Readable.fromWeb(response.body as any),
+        createWriteStream(partialPath),
+      );
+      await rename(partialPath, filePath);
+      return filePath;
+    } catch (error) {
+      lastError = error;
+      await rm(partialPath, { force: true }).catch(() => {});
+      if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 700 * 2 ** attempt));
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("Descarga fallida.");
 }
 
 export function safeFileName(value: unknown, fallback: string): string {

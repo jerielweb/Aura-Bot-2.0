@@ -18,6 +18,7 @@ import {
   NOT_ADMIN,
   NOT_MOD,
   NOT_PREMIUM,
+  formatPlainText,
 } from "./core/socketText.ts";
 import { db } from "./dbController/db.ts";
 import { handleGroupStatus, handleGroupToxic } from "./core/groupModeration.ts";
@@ -76,8 +77,14 @@ const CONTACT_METADATA_CACHE = new LRUCache<string, ContactMetadata>({
   ttl: 5 * 60 * 1000,
 });
 
-const groupCache = new Map<string, any>();
-const configuredLidCache = new Map<string, string | null>();
+const groupCache = new LRUCache<string, any>({
+  max: 500,
+  ttl: 10 * 60 * 1000,
+});
+const configuredLidCache = new LRUCache<string, string | null>({
+  max: 500,
+  ttl: 60 * 60 * 1000,
+});
 
 function stripDeviceSuffixFromJid(jid?: string | null): string | null {
   if (!jid || typeof jid !== "string") return null;
@@ -462,7 +469,6 @@ export async function handleMessage(
           groupMeta = await sock.groupMetadata(from);
           groupName = groupMeta?.subject || from;
           groupCache.set(from, groupMeta);
-          setTimeout(() => groupCache.delete(from), 10 * 60 * 1000);
         } catch {
           groupName = from;
         }
@@ -808,6 +814,9 @@ export async function handleMessage(
       clearGroupCache: () => groupCache.delete(from),
       reply: async (content: any) => {
         if (typeof content === "string") content = { text: content };
+        if (typeof content?.text === "string") {
+          content = { ...content, text: formatPlainText(content.text) };
+        }
         if (content.text !== undefined) {
           const extra = content.mentions || [];
           content.mentions = [...new Set([sender, ...extra])];

@@ -36,6 +36,7 @@ export type ConnectionOptions = {
   onConnected?: () => Promise<void> | void;
   onPairingError?: (error: Error) => Promise<void> | void;
   onPairingExpired?: () => Promise<void> | void;
+  onDisconnected?: () => Promise<void> | void;
 };
 
 function resetReconnectAttempts(sessionName: string) {
@@ -384,6 +385,7 @@ export async function connectToWhatsApp(
     }
 
     clearPairingTimer();
+    await options.onDisconnected?.();
     if (pairingExpired) return;
 
     if ((sock as any).manualLogout) {

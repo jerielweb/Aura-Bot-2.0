@@ -1,6 +1,6 @@
 import { fytBold } from "../../core/socketText.ts";
 import {
-  downloadBuffer,
+  downloadToCache,
   requestJson,
   safeFileName,
 } from "../../core/downloadUtils.ts";
@@ -40,9 +40,9 @@ export default {
           })
         : false;
       if (!hasPreview) await reply({ text: caption });
-      const file = await downloadBuffer(data.dl);
+      const file = await downloadToCache(data.dl);
       await reply({
-        document: file,
+        document: { url: file },
         mimetype: "application/vnd.android.package-archive",
         fileName: `${safeFileName(name, "application")}.apk`,
       });

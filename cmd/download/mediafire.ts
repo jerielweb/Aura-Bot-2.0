@@ -1,6 +1,6 @@
 import { request } from "undici";
 import { fytBold } from "../../core/socketText.ts";
-import { downloadBuffer, safeFileName } from "../../core/downloadUtils.ts";
+import { downloadToCache, safeFileName } from "../../core/downloadUtils.ts";
 
 const HEADERS = {
   "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AuraReedBot/2.0",
@@ -41,7 +41,7 @@ export default {
     await react("⏳");
     try {
       const data = await resolveMediaFire(url);
-      const file = await downloadBuffer(data.download, 120000);
+      const file = await downloadToCache(data.download, 180000);
       const name = safeFileName(data.name, "mediafire");
       const extension =
         name.match(/\.([a-z0-9]+)$/i)?.[1]?.toLowerCase() || "bin";
@@ -51,7 +51,7 @@ export default {
           : "application/octet-stream";
       const caption = `╭〔 📦 ${fytBold("MEDIAFIRE DL")} 〕━⬣\n\n┃ ➥ ${fytBold(name)}\n\n┣━━━━━━━━━━━━⬣\n┃ > ${fytBold("Tamaño")} › ${data.size}\n┃ > ${fytBold("Extensión")} › .${extension.toUpperCase()}\n┃ > ${fytBold("Link")} › ${url}\n┣━━━━━━━━━━━━⬣\n┃ ⏳ Descargando archivo...\n╰━━〔 ⚡ ${fytBold("SYSTEM ACTIVE")} 〕━━⬣`;
       await reply({ text: caption });
-      await reply({ document: file, mimetype: mime, fileName: name });
+      await reply({ document: { url: file }, mimetype: mime, fileName: name });
       await react("✅");
     } catch (error: any) {
       await react("❌");

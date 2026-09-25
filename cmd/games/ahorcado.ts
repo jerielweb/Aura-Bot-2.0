@@ -151,7 +151,7 @@ export async function handleReply(ctx: any): Promise<boolean> {
 
 const defaultCommand = {
   name: ["ahorcado", "hangman"],
-  category: "funy",
+  category: "games",
   description: "Juega al ahorcado.",
   handleReply,
   async run(ctx: any) {

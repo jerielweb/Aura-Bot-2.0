@@ -12,7 +12,8 @@ import {
 } from "@whiskeysockets/baileys";
 import { fytBold } from "../../core/socketText.ts";
 import { DL_CONFIG } from "../../config.ts";
-import { downloadBuffer, requestJson } from "../../core/downloadUtils.ts";
+import { readFile } from "node:fs/promises";
+import { downloadToCache, requestJson } from "../../core/downloadUtils.ts";
 import {
   imageToWebp,
   isWebp,
@@ -180,7 +181,7 @@ export default {
         rawStickers.map(async (sticker: any) => {
           const url = sticker.imageUrl || sticker.url || sticker.image;
           if (!url) throw new Error("Sticker sin url.");
-          const buffer = await downloadBuffer(url);
+          const buffer = await readFile(await downloadToCache(url));
           const animated =
             Boolean(sticker.isAnimated || sticker.animated) ||
             isAnimatedWebp(buffer);
@@ -211,7 +212,7 @@ export default {
 
       const thumbUrl = packInfo?.thumbnailUrl || packInfo?.thumbnail;
       const cover = thumbUrl
-        ? await sharp(await downloadBuffer(thumbUrl))
+        ? await sharp(await readFile(await downloadToCache(thumbUrl)))
             .resize(96, 96, { fit: "cover" })
             .webp({ quality: 80 })
             .toBuffer()

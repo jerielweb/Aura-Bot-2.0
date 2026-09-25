@@ -1,11 +1,11 @@
 import ffmpegPath from "ffmpeg-static";
 import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readFile, unlink } from "node:fs/promises";
 import { promisify } from "node:util";
 import { fytBold } from "../../core/socketText.ts";
 import {
-  downloadBuffer,
+  downloadToCache,
   formatCount,
   pickSearchResult,
   requestJson,
@@ -27,7 +27,7 @@ export default {
     if (!ffmpegPath) return reply("❌ FFmpeg no está disponible.");
     const dir = process.env.TMPDIR || "./cache";
     const id = randomUUID();
-    const input = `${dir}/tta-${id}.mp4`;
+    let input = "";
     const output = `${dir}/tta-${id}.mp3`;
     await react("⏳");
     try {
@@ -50,7 +50,7 @@ export default {
       const video = (data?.data || []).find((item: any) => item?.url)?.url;
       if (!data?.status || !video)
         throw new Error("No se encontró audio descargable.");
-      await writeFile(input, await downloadBuffer(video, 120000));
+      input = await downloadToCache(video, 180000);
       await execFileAsync(
         ffmpegPath,
         [
@@ -86,7 +86,6 @@ export default {
         text: `❌ Error: ${error?.message || "No se pudo convertir el audio."}`,
       });
     } finally {
-      await unlink(input).catch(() => undefined);
       await unlink(output).catch(() => undefined);
     }
   },

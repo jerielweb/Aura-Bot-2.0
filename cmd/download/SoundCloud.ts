@@ -1,10 +1,11 @@
 import { request } from "undici";
+import { readFile } from "node:fs/promises";
 import {
   generateWAMessageFromContent,
   prepareWAMessageMedia,
 } from "@whiskeysockets/baileys";
 import { fytBold } from "../../core/socketText.ts";
-import { downloadBuffer } from "../../core/downloadUtils.ts";
+import { downloadToCache } from "../../core/downloadUtils.ts";
 import { createLinkPreviewWithoutChannel } from "../../core/LinkPreview.ts";
 
 let cachedClientId: string | null = null;
@@ -184,7 +185,9 @@ export default {
 
       const thumbnail = track.artwork_url?.replace("large", "t500x500");
       if (thumbnail) {
-        const thumbnailBuffer = await downloadBuffer(thumbnail, 30000);
+        const thumbnailBuffer = await readFile(
+          await downloadToCache(thumbnail, 30000),
+        );
         const prepared = await prepareWAMessageMedia(
           { image: thumbnailBuffer },
           {

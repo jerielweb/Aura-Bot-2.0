@@ -2,7 +2,8 @@ import {
   generateWAMessageFromContent,
   prepareWAMessageMedia,
 } from "@whiskeysockets/baileys";
-import { downloadBuffer } from "./downloadUtils.ts";
+import { readFile } from "node:fs/promises";
+import { downloadToCache } from "./downloadUtils.ts";
 import { createLinkPreviewWithoutChannel } from "./LinkPreview.ts";
 
 type DownloadPreviewOptions = {
@@ -31,7 +32,9 @@ export async function sendDownloadPreview({
   mentions = [],
 }: DownloadPreviewOptions): Promise<boolean> {
   try {
-    const thumbnailBuffer = await downloadBuffer(thumbnail, 30000);
+    const thumbnailBuffer = await readFile(
+      await downloadToCache(thumbnail, 30000),
+    );
     const prepared = await prepareWAMessageMedia(
       { image: thumbnailBuffer },
       {

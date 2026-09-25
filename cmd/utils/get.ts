@@ -1,4 +1,5 @@
-import { downloadBuffer, safeFileName } from "../../core/downloadUtils.ts";
+import { readFile, stat } from "node:fs/promises";
+import { downloadToCache, safeFileName } from "../../core/downloadUtils.ts";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const MAX_CODE_MESSAGE_SIZE = 12000;
@@ -39,21 +40,29 @@ export default {
     if (!/^https?:\/\//i.test(url)) return reply({ text: "❌ Proporciona una URL válida. Ejemplo: .get https://sitio.com/archivo" });
     await react("⬇️");
     try {
-      const response = await fetch(url, { signal: AbortSignal.timeout(60000), headers: { "User-Agent": "Mozilla/5.0 AuraReedBot" } });
-      const length = Number(response.headers.get("content-length") || 0);
-      if (!response.ok || length > MAX_FILE_SIZE) throw new Error("No se pudo descargar el archivo o supera 50 MB.");
-      const buffer = await downloadBuffer(url, 60000);
-      if (buffer.length > MAX_FILE_SIZE) throw new Error("El archivo supera 50 MB.");
-      const headerMime = (response.headers.get("content-type") || "").split(";", 1)[0].trim().toLowerCase();
-      const fileName = fileNameFromResponse(url, response.headers.get("content-disposition"), extensionFromMime(headerMime));
+      let response: any = null;
+      try {
+        response = await fetch(url, { method: "HEAD", signal: AbortSignal.timeout(30000), headers: { "User-Agent": "Mozilla/5.0 AuraReedBot" } });
+      } catch {
+        // Algunos servidores no implementan HEAD; la descarga real valida el estado.
+      }
+      const length = Number(response?.headers.get("content-length") || 0);
+      if (response && !response.ok) throw new Error(`HTTP ${response.status}`);
+      if (length > MAX_FILE_SIZE) throw new Error("El archivo supera 50 MB.");
+      const filePath = await downloadToCache(url, 180000);
+      const fileSize = (await stat(filePath)).size;
+      if (fileSize > MAX_FILE_SIZE) throw new Error("El archivo supera 50 MB.");
+      const headerMime = (response?.headers.get("content-type") || "").split(";", 1)[0].trim().toLowerCase();
+      const fileName = fileNameFromResponse(url, response?.headers.get("content-disposition") || null, extensionFromMime(headerMime));
       const mimeType = headerMime && headerMime !== "application/octet-stream" ? headerMime : mimeFromExtension(fileName);
       let payload: any;
-      if (isCode(mimeType, fileName) && buffer.length <= MAX_CODE_MESSAGE_SIZE) {
-        payload = { text: `*${fileName}*\n\n\`\`\`\n${buffer.toString("utf8")}\n\`\`\`` };
-      } else if (mimeType.startsWith("image/") && mimeType !== "image/gif") payload = { image: buffer, mimetype: mimeType, caption: fileName };
-      else if (mimeType.startsWith("video/")) payload = { video: buffer, mimetype: mimeType, fileName };
-      else if (mimeType.startsWith("audio/")) payload = { audio: buffer, mimetype: mimeType, fileName };
-      else payload = { document: buffer, mimetype: mimeType, fileName };
+      if (isCode(mimeType, fileName) && fileSize <= MAX_CODE_MESSAGE_SIZE) {
+        const source = await readFile(filePath, "utf8");
+        payload = { text: `*${fileName}*\n\n\`\`\`\n${source}\n\`\`\`` };
+      } else if (mimeType.startsWith("image/") && mimeType !== "image/gif") payload = { image: { url: filePath }, mimetype: mimeType, caption: fileName };
+      else if (mimeType.startsWith("video/")) payload = { video: { url: filePath }, mimetype: mimeType, fileName };
+      else if (mimeType.startsWith("audio/")) payload = { audio: { url: filePath }, mimetype: mimeType, fileName };
+      else payload = { document: { url: filePath }, mimetype: mimeType, fileName };
       await reply(payload);
       await react("✅");
     } catch (error: any) {

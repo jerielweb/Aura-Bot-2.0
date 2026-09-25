@@ -1,6 +1,7 @@
 import { fytBold } from "../../core/socketText.ts";
 import { DL_CONFIG } from "../../config.ts";
-import { downloadBuffer } from "../../core/downloadUtils.ts";
+import { readFile } from "node:fs/promises";
+import { downloadToCache } from "../../core/downloadUtils.ts";
 import {
   extractEmojis,
   isWebp,
@@ -19,7 +20,7 @@ export default {
     await react("⏳");
     try {
       const url = `${DL_CONFIG.alya.BASE_URL.replace(/\/+$/, "")}/whatsapp/emoji?emoji=${encodeURIComponent(emoji)}&key=${DL_CONFIG.alya.API_KEY}`;
-      const raw = await downloadBuffer(url);
+      const raw = await readFile(await downloadToCache(url));
       const output = isWebp(raw) ? raw : await toSticker(raw, true, 10);
       const finalSticker = await applyStickerMetadata(
         output,
