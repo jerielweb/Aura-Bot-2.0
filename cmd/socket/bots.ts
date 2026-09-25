@@ -130,15 +130,15 @@ export default {
       for (const [index, bot] of visibleBots.entries()) {
         const jid = await resolveBotJid(bot, participants, resolveLid);
         const number = getBotNumber(bot, jid);
-        const name = String(bot.bot_name || "Sub-Bot").trim();
+        const name = String(bot.bot_name || "\u00A0Sub-Bot").trim();
 
-        text += `┃ > ${index + 1}. @${number}\n`;
+        text += `┃ ${index + 1}. @${number}\n`;
         text += `┃ ✦ ${fytBold(name)}\n`;
         if (jid) {
-          text += `┗\u00A0${getBotType(bot)}\n\n`;
+          text += `┗ ${getBotType(bot)}\n\n`;
           mentions.push(jid);
         } else {
-          text += `┗\u00A0${getBotType(bot)}\n\n`;
+          text += `┗ ${getBotType(bot)}\n\n`;
         }
       }
     }
