@@ -118,6 +118,7 @@ export default {
     text += `┃ 📊 ${fytBold("Activos")}: *${bots.length}*\n`;
     if (isGroup) {
       text += `┃ ⚡ ${fytBold("En este grupo")}: *${visibleBots.length}*\n`;
+      text += `┣━━━━━━━━━━━━⬣\n`;
     }
     text += `\n`;
 
@@ -132,12 +133,12 @@ export default {
         const name = String(bot.bot_name || "Sub-Bot").trim();
 
         text += `┃ > ${index + 1}. @${number}\n`;
-        text += `┃ > ${fytBold(name)}\n`;
+        text += `┃ ✦ ${fytBold(name)}\n`;
         if (jid) {
-          text += `┗ ${getBotType(bot)}\n\n`;
+          text += `┗\u00A0${getBotType(bot)}\n\n`;
           mentions.push(jid);
         } else {
-          text += `┗ ${getBotType(bot)}\n\n`;
+          text += `┗\u00A0${getBotType(bot)}\n\n`;
         }
       }
     }
