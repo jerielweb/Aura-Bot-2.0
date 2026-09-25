@@ -3,7 +3,7 @@ import { DL_CONFIG } from "../../config.ts";
 import { request } from "undici";
 
 export default {
-  name: ["wave", "saludar", "hola"],
+  name: ["wave", "saludar", "hola", "hi"],
   description: "Envía una reacción de saludo.",
   category: "interaction",
 
