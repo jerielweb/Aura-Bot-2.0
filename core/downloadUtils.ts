@@ -1,50 +1,79 @@
+import { createHash, randomBytes } from "node:crypto";
+import { createWriteStream } from "node:fs";
+import { mkdir, rename, rm, stat } from "node:fs/promises";
+import path from "node:path";
+import { pipeline } from "node:stream/promises";
+import { Readable } from "node:stream";
 import { fetch } from "undici";
 
 const HEADERS = {
-  "User-Agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-  Accept:
-    "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-  "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
-  "Sec-Ch-Ua":
-    '"Google Chrome";v="123", "Not:A-Brand";v="8", "Chromium";v="123"',
-  "Sec-Ch-Ua-Mobile": "?0",
-  "Sec-Ch-Ua-Platform": '"Windows"',
-  "Sec-Fetch-Dest": "document",
-  "Sec-Fetch-Mode": "navigate",
-  "Sec-Fetch-Site": "none",
-  "Sec-Fetch-User": "?1",
-  "Upgrade-Insecure-Requests": "1",
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AuraReedBot/2.0",
+  Accept: "application/json, text/plain, */*",
 };
 
 export async function requestJson(url: string, timeout = 30000): Promise<any> {
-  const response = await fetch(url, {
-    headers: {
-      ...HEADERS,
-      Accept: "application/json, text/plain, */*",
-    },
-    signal: AbortSignal.timeout(timeout),
-    redirect: "follow",
-  });
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const response = await fetch(url, {
+        headers: HEADERS,
+        signal: AbortSignal.timeout(timeout),
+        redirect: "follow",
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.json();
+    } catch (error) {
+      lastError = error;
+      if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** attempt));
+    }
   }
-  return response.json();
+  throw lastError instanceof Error ? lastError : new Error("Solicitud fallida.");
 }
 
-export async function downloadBuffer(
+const CACHE_DIR = path.resolve(process.env.GLOBAL_CUSTOM_TMP || "./cache");
+
+export async function downloadToCache(
   url: string,
-  timeout = 120000,
-): Promise<Buffer> {
-  const response = await fetch(url, {
-    headers: HEADERS,
-    signal: AbortSignal.timeout(timeout),
-    redirect: "follow",
-  });
-  if (!response.ok) {
-    throw new Error(`Descarga HTTP ${response.status}`);
+  timeout = 180000,
+): Promise<string> {
+  await mkdir(CACHE_DIR, { recursive: true });
+  const cacheKey = createHash("sha256").update(url).digest("hex").slice(0, 32);
+  const filePath = path.join(CACHE_DIR, `download-${cacheKey}.bin`);
+
+  try {
+    const cached = await stat(filePath);
+    if (cached.size > 0) return filePath;
+  } catch {
+    // El archivo aún no existe o quedó incompleto.
   }
-  return Buffer.from(await response.arrayBuffer());
+
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const partialPath = path.join(
+      CACHE_DIR,
+      `.download-${cacheKey}-${process.pid}-${randomBytes(4).toString("hex")}.part`,
+    );
+    try {
+      const response = await fetch(url, {
+        headers: HEADERS,
+        signal: AbortSignal.timeout(timeout),
+        redirect: "follow",
+      });
+      if (!response.ok) throw new Error(`Descarga HTTP ${response.status}`);
+      if (!response.body) throw new Error("La descarga no devolvió contenido.");
+      await pipeline(
+        Readable.fromWeb(response.body as any),
+        createWriteStream(partialPath),
+      );
+      await rename(partialPath, filePath);
+      return filePath;
+    } catch (error) {
+      lastError = error;
+      await rm(partialPath, { force: true }).catch(() => {});
+      if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 700 * 2 ** attempt));
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("Descarga fallida.");
 }
 
 export function safeFileName(value: unknown, fallback: string): string {
