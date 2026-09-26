@@ -33,10 +33,10 @@ export default {
 ╰━━━━━━━━━━━━⬣
 
 ┃ ➪ ${ctx.usedPrefix || "."}disable [cat]
-┃ ✦ Habilitar comandos
+┃ ✦ Deshabilitar comandos
 
 ┃ ➪ ${ctx.usedPrefix || "."}enable [cat]
-┃ ✦ Deshabilitar comandos
+┃ ✦ Habilitar comandos
 
 ╭━━━━━━━━━━━━⬣
 ┃ 📂 Categorías y Estado:
