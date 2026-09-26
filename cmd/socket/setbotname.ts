@@ -2,7 +2,7 @@ export default {
   name: ["setbotname", "setname", "botname"],
   category: "socket",
   description: "Cambia el nombre del bot en el menú.",
-  ownerOnly: true,
+  botUserOnly: true,
   async run(ctx: any) {
     const name = ctx.args.join(" ").trim();
     if (!name || name.length > 60) {

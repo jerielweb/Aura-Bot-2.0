@@ -16,7 +16,7 @@ export default {
   name: ["setbanner", "setmenuimage", "setmenubanner"],
   category: "socket",
   description: "Cambia el banner que usa el menú.",
-  ownerOnly: true,
+  botUserOnly: true,
   async run(ctx: any) {
     const context = ctx.msg?.message?.extendedTextMessage?.contextInfo;
     const quotedMessage = context?.quotedMessage;
